@@ -1,6 +1,7 @@
 .region {
   position: fixed;
-  inset-inline: 0;
+  /* Margem lateral: com inset 0 a faixa passava por baixo da barra de rolagem e criava rolagem lateral no celular. */
+  inset-inline: var(--gutter);
   bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
@@ -16,6 +17,7 @@
   color: #fff;
   font-weight: 600;
   box-shadow: var(--shadow-pop);
+  text-align: center;
   animation: rise 0.2s ease-out;
 }
 
