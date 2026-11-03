@@ -9,7 +9,7 @@ Implementa o contrato `Api` do front (`apps/web/src/services/api.ts`) e valida o
 npm install                                  # também gera o client do Prisma
 cp apps/api/.env.example apps/api/.env       # preencha JWT_SECRET
 npm run db:push -w apps/api                  # cria as tabelas
-npm run db:seed -w apps/api                  # dados de exemplo (não são dados reais)
+npm run db:seed -w apps/api                  # dados de exemplo (não são dados reais); com SEED_ADMIN_* no .env, cria uma conta de teste do painel
 npm run user:create -w apps/api -- --email voce@exemplo.org --name "Seu Nome" --role admin
 npm run dev:api                              # http://localhost:3333
 ```
