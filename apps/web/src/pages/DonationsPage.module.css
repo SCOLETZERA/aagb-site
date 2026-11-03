@@ -96,7 +96,8 @@
   margin-bottom: var(--space-1);
 }
 
-.rankRow span {
+/* Só a contagem do ranking; a etiqueta de categoria do histórico (também um span) mantém a própria cor. */
+.ranking .rankRow span {
   color: var(--ink-soft);
   font-size: var(--text-sm);
 }
