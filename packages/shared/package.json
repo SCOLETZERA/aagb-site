@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Schemas Zod e listas fixas usados pelo front-end e pela API.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./sample-data": "./src/sample-data.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
