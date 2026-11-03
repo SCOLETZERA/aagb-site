@@ -16,9 +16,9 @@ npm test -w apps/web               # Vitest
 
 | Pasta | Para quê |
 | --- | --- |
-| `src/domain` | Tipos de domínio (artigos, produtos, doações…). É o formato que a API deve devolver. |
-| `src/schemas` | Schemas Zod dos formulários. Reutilizar no servidor para validar de novo. |
-| `src/services` | `Api` (contrato) e `mock/` (dados de exemplo). **Ponto de troca para a API real.** |
+| `src/domain` | Reexporta os tipos de domínio de `@aagb/shared`, o mesmo formato que a API devolve. |
+| `src/schemas` | Reexporta os schemas Zod de `@aagb/shared`; o servidor valida com os mesmos. |
+| `src/services` | `Api` (contrato), `httpApi` (API real) e `mock/` (dados de exemplo). |
 | `src/features` | Estado com contexto: carrinho, tema, avisos. |
 | `src/components` | `ui/` (peças de interface) e `layout/` (cabeçalho, rodapé). |
 | `src/pages` | Uma página por rota, carregadas sob demanda. |
@@ -27,13 +27,10 @@ npm test -w apps/web               # Vitest
 
 ## Ligando ao back-end
 
-1. Criar `src/services/httpApi.ts` implementando a interface `Api` de `src/services/api.ts`, com `fetch` para a API.
-2. Trocar `export const api = mockApi` por `httpApi` em `src/services/index.ts`. Nenhuma página precisa mudar.
-3. Combinar com o back-end: IDs em texto, datas ISO (`AAAA-MM-DD`), preços em centavos, e `ApiError` com status HTTP para erros.
-4. O que o servidor **deve** fazer de novo (o front não é confiável): validar com os mesmos schemas Zod, checar estoque e preço reais do pedido, limitar requisições e autenticar a área administrativa.
+`src/services/httpApi.ts` implementa a interface `Api` com `fetch`. Basta definir `VITE_API_URL` em `.env.local` (ex.: `http://localhost:3333`); sem ela, o site continua com os dados de exemplo. Os schemas dos formulários, os tipos de domínio e os dados de exemplo vivem em `packages/shared` e são os mesmos que a API usa. Detalhes do servidor em `apps/api/README.md`.
 
 ## Antes de publicar
 
-- Trocar os dados de `src/services/mock/data.ts` e as fotos de `public/img` por conteúdo real da associação.
+- Cadastrar o conteúdo real pelo painel (os dados de exemplo ficam em `packages/shared/src/sample-data.ts`) e trocar as fotos de `public/img` por conteúdo real da associação.
 - Preencher `VITE_WHATSAPP_NUMBER` (ver `.env.example`) se quiser pedidos pelo WhatsApp.
 - Configurar no servidor de hospedagem: HTTPS, cabeçalhos de segurança (CSP, etc.) e redirecionar qualquer rota para `index.html` (o site usa rotas no navegador).
