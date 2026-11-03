@@ -1,0 +1,46 @@
+.prose {
+  display: grid;
+  gap: var(--space-6);
+  max-width: var(--measure);
+  padding-bottom: var(--space-8);
+}
+
+.prose h2 {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-lg);
+}
+
+.prose p + p {
+  margin-top: var(--space-3);
+}
+
+.prose a {
+  color: var(--brand);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.uses {
+  display: grid;
+  gap: var(--space-2) var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.uses dt {
+  font-weight: 700;
+}
+
+.uses dd {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-soft);
+}
+
+@media (min-width: 40rem) {
+  .uses {
+    grid-template-columns: 13rem 1fr;
+  }
+
+  .uses dd {
+    margin-bottom: 0;
+  }
+}

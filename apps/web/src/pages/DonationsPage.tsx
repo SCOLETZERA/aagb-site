@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { IconBadge, Pill, ProgressBar } from '@/components/ui/Card'
 import { FormError, SelectField, TextField } from '@/components/ui/Field'
+import { PrivacyNotice } from '@/components/ui/PrivacyNotice'
 import { Icon } from '@/components/ui/Icon'
 import { Container, PageHeader, Panel, Section } from '@/components/ui/Layout'
 import { ResourceState } from '@/components/ui/States'
@@ -132,6 +133,7 @@ export function DonationsPage() {
                 <TextField label="Seu nome" autoComplete="name" {...form.field('name')} />
                 <TextField label="Telefone ou e-mail" autoComplete="email" {...form.field('contact')} />
                 <SelectField label="Como será a entrega?" options={HANDOVER} {...form.field('handover')} />
+                <PrivacyNotice purpose="combinar a sua doação" />
                 {form.formError && <FormError>{form.formError}</FormError>}
                 <Button type="submit" size="lg" disabled={form.submitting}>
                   {form.submitting ? 'Enviando…' : 'Enviar oferta de doação'}

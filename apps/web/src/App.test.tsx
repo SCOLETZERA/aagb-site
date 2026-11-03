@@ -41,4 +41,18 @@ describe('App', () => {
     renderAt('/rota-que-nao-existe')
     expect(await screen.findByRole('heading', { name: /não encontramos/i })).toBeInTheDocument()
   })
+
+  it('formulário de serviço mostra o aviso de privacidade com link para a política', async () => {
+    renderAt('/servicos')
+    await screen.findByRole('button', { name: /enviar solicitação/i }, { timeout: 5000 })
+    const link = screen.getAllByRole('link', { name: /como cuidamos dos seus dados/i })[0]
+    expect(link).toHaveAttribute('href', '/privacidade')
+    expect(screen.getByText(/só para agendar o serviço com você/i)).toBeInTheDocument()
+  })
+
+  it('mostra a política de privacidade', async () => {
+    renderAt('/privacidade')
+    expect(await screen.findByRole('heading', { level: 1, name: /como cuidamos dos seus dados/i }, { timeout: 5000 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /seus direitos/i })).toBeInTheDocument()
+  })
 })

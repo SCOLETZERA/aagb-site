@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { IconBadge } from '@/components/ui/Card'
 import { FormError, SelectField, TextAreaField, TextField } from '@/components/ui/Field'
+import { PrivacyNotice } from '@/components/ui/PrivacyNotice'
 import { Icon } from '@/components/ui/Icon'
 import { Container, PageHeader, Panel } from '@/components/ui/Layout'
 import { ResourceState } from '@/components/ui/States'
@@ -103,6 +104,7 @@ export function ServicesPage() {
                 <TextField label="Comunidade ou localidade" {...form.field('locality')} />
                 <TextField label="Data desejada (opcional)" type="date" min={today()} {...form.field('desiredDate')} />
                 <TextAreaField label="Detalhes do que você precisa (opcional)" {...form.field('details')} />
+                <PrivacyNotice purpose="agendar o serviço com você" />
                 {form.formError && <FormError>{form.formError}</FormError>}
                 <Button type="submit" size="lg" disabled={form.submitting}>
                   {form.submitting ? 'Enviando…' : 'Enviar solicitação'}

@@ -1,0 +1,14 @@
+.notice {
+  margin-bottom: var(--space-4);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.notice a {
+  display: inline-block;
+  padding-block: 0.6rem; /* alvo de toque de 44px sem empurrar o texto */
+  margin-block: -0.6rem;
+  color: var(--brand);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}

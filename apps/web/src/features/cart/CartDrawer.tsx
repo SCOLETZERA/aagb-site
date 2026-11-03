@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { FormError, SelectField, TextField } from '@/components/ui/Field'
+import { PrivacyNotice } from '@/components/ui/PrivacyNotice'
 import { Drawer } from '@/components/ui/Drawer'
 import { Icon } from '@/components/ui/Icon'
 import { formatMoney } from '@/lib/format'
@@ -104,6 +105,7 @@ export function CartDrawer() {
             {form.values.delivery === 'entrega' && (
               <TextField label="Endereço para entrega" autoComplete="street-address" {...form.field('address')} />
             )}
+            <PrivacyNotice purpose="combinar a retirada ou a entrega do seu pedido" />
             {form.formError && <FormError>{form.formError}</FormError>}
             <Button type="submit" fullWidth size="lg" disabled={form.submitting}>
               {form.submitting ? 'Enviando…' : 'Enviar pedido'}

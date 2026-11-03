@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
 export const FOOTER_LINKS = [
   { to: '/parceiros', label: 'Parceiros' },
   { to: '/transparencia', label: 'Transparência' },
+  { to: '/privacidade', label: 'Privacidade' },
 ] as const
 
 export const ASSOCIATION = {
