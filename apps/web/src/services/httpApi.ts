@@ -1,6 +1,14 @@
 import type { TransparencyDocument } from '@/domain/types'
 import { ApiError, type Api } from './api'
 
+/** Converte a resposta de erro da API (`{ message, fields? }`) em `ApiError`. */
+export async function errorFrom(res: Response): Promise<ApiError> {
+  const body = (await res.json().catch(() => null)) as { message?: unknown; fields?: unknown } | null
+  const message = typeof body?.message === 'string' ? body.message : 'Algo deu errado. Tente novamente.'
+  const fields = body?.fields && typeof body.fields === 'object' ? (body.fields as Record<string, string>) : {}
+  return new ApiError(message, res.status, fields)
+}
+
 /**
  * Implementação de `Api` que conversa com o back-end (`apps/api`).
  * As rotas públicas não usam cookies: `credentials: 'omit'`.
@@ -19,11 +27,7 @@ export function createHttpApi(baseUrl: string, fetchImpl: typeof fetch = (...arg
     } catch {
       throw new ApiError('Não foi possível falar com o servidor. Confira sua internet e tente de novo.', 0)
     }
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as { message?: unknown } | null
-      const message = typeof body?.message === 'string' ? body.message : 'Algo deu errado. Tente novamente.'
-      throw new ApiError(message, res.status)
-    }
+    if (!res.ok) throw await errorFrom(res)
     return (await res.json()) as T
   }
 

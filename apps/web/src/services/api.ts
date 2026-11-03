@@ -43,9 +43,12 @@ export interface Api {
 
 export class ApiError extends Error {
   readonly status: number
-  constructor(message: string, status = 500) {
+  /** Erro de cada campo, quando o servidor recusa os dados (status 400). */
+  readonly fields: Record<string, string>
+  constructor(message: string, status = 500, fields: Record<string, string> = {}) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.fields = fields
   }
 }
