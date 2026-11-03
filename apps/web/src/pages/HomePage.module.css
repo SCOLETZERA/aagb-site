@@ -1,0 +1,244 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding-top: var(--space-6);
+  background: color-mix(in srgb, var(--sun) 16%, var(--paper));
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.heroText h1 {
+  font-size: var(--text-hero);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  animation: arrive 0.6s ease-out both;
+}
+
+.heroText p {
+  margin-top: var(--space-4);
+  max-width: 34rem;
+  font-size: var(--text-lg);
+  color: var(--ink-soft);
+  animation: arrive 0.6s 0.1s ease-out both;
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  animation: arrive 0.6s 0.2s ease-out both;
+}
+
+.heroArt {
+  position: relative;
+  isolation: isolate;
+}
+
+.heroArt img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3.4;
+  object-fit: cover;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 6rem;
+}
+
+.sun {
+  position: absolute;
+  z-index: -1;
+  top: -2.2rem;
+  right: -2.2rem;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  background: var(--sun);
+}
+
+.furrows {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 4.5rem;
+  fill: none;
+  stroke: var(--leaf);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+.about {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--space-7);
+  padding-block: var(--space-7) var(--space-5);
+}
+
+.about h2 {
+  margin-bottom: var(--space-4);
+}
+
+.about p + p {
+  margin-top: var(--space-3);
+}
+
+.about p {
+  max-width: var(--measure);
+}
+
+.fact {
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.values {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-content: start;
+}
+
+.values li {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.values p {
+  color: var(--ink-soft);
+}
+
+.news {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: var(--space-5);
+}
+
+.featured {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-height: 24rem;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--forest);
+  color: #fff;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.featuredImage {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+}
+
+.featured::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 25%, rgba(8, 24, 14, 0.85));
+}
+
+.featured:hover {
+  transform: translateY(-3px);
+}
+
+.featured h3 {
+  color: #fff;
+  font-size: var(--text-xl);
+}
+
+.featured p {
+  opacity: 0.92;
+}
+
+.date {
+  align-self: flex-start;
+  padding: 0.15rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--sun);
+  color: var(--sun-ink);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.newsList {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.cardDate {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.ways {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-4);
+}
+
+.retry {
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@media (max-width: 56rem) {
+  .heroGrid,
+  .about,
+  .news {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroGrid {
+    padding-bottom: var(--space-7);
+  }
+
+  .sun {
+    right: -0.8rem;
+    top: -1.4rem;
+    width: 6rem;
+    height: 6rem;
+  }
+
+  .featured {
+    min-height: 18rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured:hover {
+    transform: none;
+  }
+}

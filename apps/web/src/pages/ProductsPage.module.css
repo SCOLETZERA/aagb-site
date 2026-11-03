@@ -1,0 +1,188 @@
+.shop {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.filters {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-4));
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  border: 0;
+}
+
+.chips legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.chip {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.9rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--brand);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+.count {
+  margin-bottom: var(--space-3);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.media {
+  display: grid;
+  place-items: center;
+  height: 9.5rem;
+  color: #fff;
+  background: linear-gradient(160deg, #2f7d3f, #14402a);
+}
+
+.media[data-category='Mel'] {
+  background: linear-gradient(160deg, #e0a82a, #8a5d00);
+}
+
+.media[data-category='Grãos'] {
+  background: linear-gradient(160deg, #b99a2a, #6f5a12);
+}
+
+.media[data-category='Laticínios'] {
+  background: linear-gradient(160deg, #d9b54f, #8a6a1c);
+}
+
+.media[data-category='Mudas'] {
+  background: linear-gradient(160deg, #2f8a77, #1d5a4c);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+}
+
+.body h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.body h3 a:hover {
+  text-decoration: underline;
+}
+
+.body button {
+  margin-top: auto;
+}
+
+.category {
+  color: var(--accent-text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.by {
+  flex: 1;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.price {
+  margin-top: var(--space-2);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.price small {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.stock {
+  margin-bottom: var(--space-2);
+  color: var(--success);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.low {
+  color: var(--danger);
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  padding-block: var(--space-5) var(--space-7);
+}
+
+.big {
+  height: auto;
+  min-height: 18rem;
+  border-radius: var(--radius-lg);
+}
+
+.info {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  align-content: start;
+}
+
+.priceBig {
+  font-size: 2.25rem;
+  margin-top: 0;
+}
+
+@media (max-width: 56rem) {
+  .shop,
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filters {
+    position: static;
+  }
+}

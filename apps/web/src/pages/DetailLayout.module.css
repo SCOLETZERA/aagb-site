@@ -1,0 +1,45 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: var(--space-6);
+  align-items: start;
+  padding-block: var(--space-5) var(--space-7);
+}
+
+.article {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+}
+
+.article > p {
+  max-width: var(--measure);
+}
+
+.hero {
+  width: 100%;
+  max-height: 26rem;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+}
+
+.lead {
+  font-size: var(--text-lg);
+  color: var(--ink-soft);
+}
+
+.related {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.related h2 {
+  font-size: var(--text-lg);
+}
+
+@media (max-width: 62rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
