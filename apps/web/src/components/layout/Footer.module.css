@@ -15,6 +15,13 @@
   text-underline-offset: 4px;
 }
 
+/* Alvo de toque mínimo de 44px nas listas de links do rodapé. */
+.partners a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
@@ -38,9 +45,16 @@
   margin-top: 0.2rem;
 }
 
+.with a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-block: -0.6rem;
+}
+
 .partners {
   display: grid;
-  gap: var(--space-2);
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
