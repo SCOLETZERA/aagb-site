@@ -1,3 +1,5 @@
+import type { IconName } from '@aagb/shared'
+
 export const ICON_PATHS = {
   news: '<path d="M4 4h13v16H6a2 2 0 0 1-2-2z"/><path d="M17 8h3v10a2 2 0 0 1-2 2"/><path d="M8 8h5M8 12h5M8 16h5"/>',
   hive: '<path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/><path d="M12 8l3.5 2v4L12 16l-3.5-2v-4z"/>',
@@ -30,6 +32,6 @@ export const ICON_PATHS = {
   pin: '<path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   minus: '<path d="M5 12h14"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
-} as const
+} as const satisfies Record<IconName, string>
 
-export type IconName = keyof typeof ICON_PATHS
+export type { IconName }

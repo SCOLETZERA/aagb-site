@@ -1,0 +1,16 @@
+{
+  "name": "@aagb/shared",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Schemas Zod e listas fixas usados pelo front-end e pela API.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

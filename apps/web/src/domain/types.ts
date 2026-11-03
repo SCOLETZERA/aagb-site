@@ -1,4 +1,7 @@
-import type { IconName } from '@/components/ui/icon-paths'
+import type { DocumentCategory, IconName, ProductCategory, ProjectStatus } from '@aagb/shared'
+
+export { DOCUMENT_CATEGORIES, PRODUCT_CATEGORIES } from '@aagb/shared'
+export type { DocumentCategory, ProductCategory, ProjectStatus } from '@aagb/shared'
 
 /** Tipos de domínio. O back-end (Fastify + Prisma) deve devolver exatamente estes formatos. */
 
@@ -17,8 +20,6 @@ export interface Article {
   imageAlt?: string
 }
 
-export type ProjectStatus = 'em-andamento' | 'planejado' | 'concluido'
-
 export interface Project {
   id: Id
   title: string
@@ -36,9 +37,6 @@ export interface Partner {
   body: string[]
   icon: IconName
 }
-
-export const PRODUCT_CATEGORIES = ['Mel', 'Hortaliças', 'Grãos', 'Laticínios', 'Mudas'] as const
-export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number]
 
 export interface Product {
   id: Id
@@ -81,14 +79,6 @@ export interface Donation {
   category: string
   usage: string
 }
-
-export const DOCUMENT_CATEGORIES = [
-  { id: 'prestacao-de-contas', label: 'Prestação de contas', hint: 'Relatórios financeiros e de atividades da diretoria.' },
-  { id: 'convenio', label: 'Convênios e parcerias', hint: 'Convênios públicos e parcerias com órgãos de governo.' },
-  { id: 'edital', label: 'Editais', hint: 'Editais e chamadas públicas, como as do PAA e do PNAE.' },
-  { id: 'ata', label: 'Atas e estatuto', hint: 'Atas de assembleia e documentos de formação da associação.' },
-] as const
-export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number]['id']
 
 export interface TransparencyDocument {
   id: Id
