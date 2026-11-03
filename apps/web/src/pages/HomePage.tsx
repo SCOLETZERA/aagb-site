@@ -16,10 +16,10 @@ const VALUES: { icon: IconName; title: string; text: string }[] = [
   { icon: 'users', title: 'União e cooperação', text: 'Associados que crescem juntos e se apoiam.' },
 ]
 
-const WAYS: { to: string; icon: IconName; title: string; text: string }[] = [
-  { to: '/produtos', icon: 'jar', title: 'Comprar produtos', text: 'Mel, hortaliças, grãos e queijo direto de quem produz.' },
-  { to: '/servicos', icon: 'tractor', title: 'Usar os serviços', text: 'Máquinas, assistência técnica, venda coletiva e cursos.' },
-  { to: '/doacoes', icon: 'gift', title: 'Fazer uma doação', text: 'Veja o que falta e ajude as famílias associadas.' },
+const WAYS: { to: string; title: string; text: string }[] = [
+  { to: '/produtos', title: 'Comprar produtos', text: 'Mel, hortaliças, grãos e queijo direto de quem produz.' },
+  { to: '/servicos', title: 'Usar os serviços', text: 'Máquinas, assistência técnica, venda coletiva e cursos.' },
+  { to: '/doacoes', title: 'Fazer uma doação', text: 'Veja o que falta e ajude as famílias associadas.' },
 ]
 
 function FurrowBand() {
@@ -132,11 +132,16 @@ export function HomePage() {
         </Section>
 
         <Section title="Como participar">
-          <div className={styles.ways}>
+          <ul className={styles.ways}>
             {WAYS.map((w) => (
-              <LinkCard key={w.to} to={w.to} title={w.title} summary={w.text} icon={w.icon} />
+              <li key={w.to}>
+                <Link to={w.to} className={styles.way}>
+                  <span className={styles.wayTitle}>{w.title}</span>
+                  <span className={styles.wayText}>{w.text}</span>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </Section>
       </Container>
     </>
