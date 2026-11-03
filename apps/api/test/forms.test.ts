@@ -1,4 +1,6 @@
+import type { PrismaClient } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
+import { createOrder } from '../src/services/orders.js'
 import { makeApp } from './helpers.js'
 
 const app = await makeApp()
@@ -48,6 +50,19 @@ describe('pedido', () => {
     expect(results.filter((r) => r.statusCode === 201)).toHaveLength(1)
     expect(results.filter((r) => r.statusCode === 409)).toHaveLength(4)
     expect(await stockOf('queijo-coalho')).toBe(0)
+  })
+
+  it('a baixa condicional barra a venda mesmo se a leitura do estoque estiver desatualizada', async () => {
+    // No SQLite as transações já rodam em fila, então o teste acima passaria mesmo sem a proteção.
+    // Aqui a leitura mente (estoque 999), como pode acontecer entre transações no Postgres.
+    await app.prisma.product.update({ where: { id: 'milho-5kg' }, data: { stock: 1 } })
+    const stale = app.prisma.$extends({
+      query: { product: { findMany: async ({ args, query }) => (await query(args)).map((p) => ({ ...p, stock: 999 })) } },
+    }) as unknown as PrismaClient
+    await expect(createOrder(stale, { ...customer, delivery: 'retirada' }, [{ productId: 'milho-5kg', quantity: 2 }])).rejects.toMatchObject({
+      status: 409,
+    })
+    expect(await stockOf('milho-5kg')).toBe(1)
   })
 
   it('produto inexistente ou inativo dá 422', async () => {

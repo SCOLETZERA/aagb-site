@@ -32,7 +32,7 @@ export type DocumentStore = ReturnType<typeof createDocumentStore>
 /** Nome de download legível e seguro para o cabeçalho Content-Disposition. */
 export function contentDisposition(title: string): string {
   const printable = [...title.normalize('NFC')].map((c) => (c.charCodeAt(0) < 0x20 ? ' ' : c)).join('')
-  const base = printable.replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 120) || 'documento'
+  const base = printable.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) || 'documento'
   const ascii = base.normalize('NFD').replace(/[^\x20-\x7e]/g, '').replace(/[%;]/g, '').trim() || 'documento'
   return `attachment; filename="${ascii}.pdf"; filename*=UTF-8''${encodeURIComponent(`${base}.pdf`)}`
 }
