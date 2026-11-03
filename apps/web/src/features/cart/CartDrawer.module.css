@@ -13,6 +13,10 @@
   border-bottom: 1px solid var(--line);
 }
 
+.line > div:first-child {
+  min-width: 0;
+}
+
 .sub {
   color: var(--ink-soft);
   font-size: var(--text-sm);
@@ -42,9 +46,17 @@
   cursor: not-allowed;
 }
 
-.qty span {
-  min-width: 1.5rem;
+.qtyInput {
+  width: 3.5rem;
+  height: 2.75rem;
+  padding: 0 var(--space-1);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   text-align: center;
+  font-weight: 700;
+  /* 16 px ou mais evita o zoom automático do iOS ao focar o campo. */
+  font-size: 1rem;
 }
 
 .total {

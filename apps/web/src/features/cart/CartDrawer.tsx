@@ -18,6 +18,28 @@ const DELIVERY_OPTIONS = [
   { value: 'entrega', label: 'Receber em casa' },
 ]
 
+/** Campo numérico para quem quer muitas unidades sem tocar no "+" dezenas de vezes. O rascunho some ao sair do campo. */
+function QuantityInput({ label, value, max, onChange }: { label: string; value: number; max: number; onChange(quantity: number): void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      className={styles.qtyInput}
+      aria-label={label}
+      value={draft ?? String(value)}
+      onFocus={(e) => e.target.select()}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, '').slice(0, 4)
+        setDraft(digits)
+        if (digits) onChange(Math.min(Number(digits), max))
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  )
+}
+
 export function CartDrawer() {
   const { state, actions, meta } = useCart()
   const [protocol, setProtocol] = useState<string | null>(null)
@@ -74,12 +96,18 @@ export function CartDrawer() {
                   <p className={styles.sub}>
                     {formatMoney(line.priceCents)} · {line.unit}
                   </p>
+                  {line.quantity >= line.stock && <p className={styles.sub}>Todo o estoque disponível ({line.stock}).</p>}
                 </div>
                 <div className={styles.qty} role="group" aria-label={`Quantidade de ${line.name}`}>
                   <button type="button" onClick={() => actions.setQuantity(line.productId, line.quantity - 1)} aria-label="Diminuir">
                     <Icon name="minus" size={18} />
                   </button>
-                  <span aria-live="polite">{line.quantity}</span>
+                  <QuantityInput
+                    label={`Quantidade de ${line.name}`}
+                    value={line.quantity}
+                    max={line.stock}
+                    onChange={(quantity) => actions.setQuantity(line.productId, quantity)}
+                  />
                   <button
                     type="button"
                     onClick={() => actions.setQuantity(line.productId, line.quantity + 1)}

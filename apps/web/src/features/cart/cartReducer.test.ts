@@ -29,6 +29,16 @@ describe('cartReducer', () => {
     expect(cartReducer(lines, { type: 'setQuantity', productId: 'mel', quantity: 0 })).toEqual([])
   })
 
+  it('aceita quantidades acima de 99 enquanto houver estoque', () => {
+    const lines = cartReducer([], { type: 'add', product: { ...mel, stock: 500 } })
+    expect(cartReducer(lines, { type: 'setQuantity', productId: 'mel', quantity: 250 })[0]?.quantity).toBe(250)
+  })
+
+  it('ignora quantidade que não é número', () => {
+    const lines = cartReducer([], { type: 'add', product: mel })
+    expect(cartReducer(lines, { type: 'setQuantity', productId: 'mel', quantity: NaN })).toEqual(lines)
+  })
+
   it('calcula quantidade e total em centavos', () => {
     let lines = cartReducer([], { type: 'add', product: mel })
     lines = cartReducer(lines, { type: 'add', product: mel })

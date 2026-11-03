@@ -16,15 +16,13 @@ export type CartAction =
   | { type: 'remove'; productId: string }
   | { type: 'clear' }
 
-export const MAX_PER_LINE = 99
-
 export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
   switch (action.type) {
     case 'add': {
       const { product } = action
       const existing = lines.find((l) => l.productId === product.id)
       if (existing) {
-        const quantity = Math.min(existing.quantity + 1, product.stock, MAX_PER_LINE)
+        const quantity = Math.min(existing.quantity + 1, product.stock)
         return lines.map((l) => (l.productId === product.id ? { ...l, quantity, stock: product.stock } : l))
       }
       if (product.stock < 1) return lines
@@ -41,12 +39,10 @@ export function cartReducer(lines: CartLine[], action: CartAction): CartLine[] {
       ]
     }
     case 'setQuantity':
+      // Valor que não é número (campo vazio ou texto) não mexe no carrinho; o limite é só o estoque informado.
+      if (!Number.isFinite(action.quantity)) return lines
       return lines
-        .map((l) =>
-          l.productId === action.productId
-            ? { ...l, quantity: Math.min(Math.floor(action.quantity), l.stock, MAX_PER_LINE) }
-            : l,
-        )
+        .map((l) => (l.productId === action.productId ? { ...l, quantity: Math.min(Math.floor(action.quantity), l.stock) } : l))
         .filter((l) => l.quantity > 0)
     case 'remove':
       return lines.filter((l) => l.productId !== action.productId)
