@@ -45,8 +45,11 @@ export async function registerSecurity(app: FastifyInstance, config: Config) {
   // Sem corpo em texto puro: só JSON (registrado por padrão) e multipart (onde for registrado).
   app.removeContentTypeParser('text/plain')
 
+  // Usa o padrão da rota já resolvida, não a URL crua: "/api/%61dmin/…" chega à mesma rota
+  // que "/api/admin/…" e não pode escapar da checagem.
   app.addHook('onRequest', async (request) => {
-    if (!UNSAFE_METHODS.has(request.method) || !request.url.startsWith('/api/admin/')) return
+    const route = request.routeOptions.url ?? ''
+    if (!UNSAFE_METHODS.has(request.method) || !route.startsWith('/api/admin/')) return
     const origin = request.headers.origin
     if (!origin || !config.CORS_ORIGINS.includes(origin)) {
       throw new AppError(403, 'Origem da requisição não permitida.')

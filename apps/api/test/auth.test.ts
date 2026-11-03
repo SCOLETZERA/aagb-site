@@ -181,4 +181,21 @@ describe('CSRF e papéis', () => {
     for (let i = 0; i < 4; i++) codes.push((await login(limited, 'ninguem@aagb.test', 'x')).statusCode)
     expect(codes).toEqual([401, 401, 401, 429])
   })
+
+  it('URL codificada não escapa da checagem de origem', async () => {
+    const { cookie } = await loggedIn(app, 'admin')
+    for (const url of ['/api/%61dmin/orders/x', '/api/adm%69n/orders/x']) {
+      const res = await app.inject({ method: 'PATCH', url, headers: { cookie }, payload: { status: 'concluido' } })
+      expect(res.statusCode).toBe(403)
+    }
+  })
+
+  it('tentativas erradas em paralelo são todas contadas e bloqueiam a conta', async () => {
+    const user = await createUser(app, 'diretoria')
+    await Promise.all(Array.from({ length: 8 }, () => login(app, user.email, 'senha-errada-qualquer')))
+    const saved = await app.prisma.user.findUniqueOrThrow({ where: { id: user.id } })
+    expect(saved.failedLogins).toBe(8)
+    expect(saved.lockedUntil!.getTime()).toBeGreaterThan(Date.now())
+    expect((await login(app, user.email)).statusCode).toBe(401)
+  })
 })

@@ -23,7 +23,8 @@ const count = z.number().int().min(0).max(1_000_000)
 const imagePath = z
   .string()
   .max(300)
-  .refine((v) => /^\/[\w\-./]+$/.test(v) || /^https:\/\/[^\s"'<>]+$/.test(v), 'Use um caminho /img/… ou um endereço https.')
+  // "(?!\/)" barra "//outro-site.com/…", que o navegador leria como endereço de outro site.
+  .refine((v) => /^\/(?!\/)[\w\-./]+$/.test(v) || /^https:\/\/[^\s"'<>]+$/.test(v), 'Use um caminho /img/… ou um endereço https.')
 
 const schemas = {
   news: z.object({

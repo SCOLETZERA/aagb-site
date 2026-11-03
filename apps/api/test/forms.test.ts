@@ -96,6 +96,13 @@ describe('solicitação de serviço e oferta de doação', () => {
   const service = { serviceId: 'assistencia-tecnica', name: 'João Batista', phone: '88999990000', locality: 'Bálsamos', desiredDate: '', details: '' }
   const donation = { itemId: 'sementes', name: 'Ana Paula', contact: 'ana@exemplo.org', quantity: '10 kg', handover: 'levar' }
 
+  it('recusa identificador gigante e data fora do formato do navegador', async () => {
+    const send = (payload: object) => app.inject({ method: 'POST', url: '/api/service-requests', payload: { ...service, ...payload } })
+    expect((await send({ serviceId: 'x'.repeat(5000) })).statusCode).toBe(400)
+    expect((await send({ desiredDate: 'Tue, 03 Nov 2026 10:00:00 GMT' })).statusCode).toBe(400)
+    expect((await send({ desiredDate: '2026-11-20' })).statusCode).toBe(201)
+  })
+
   it('cria a solicitação de serviço com o nome do serviço', async () => {
     const res = await app.inject({ method: 'POST', url: '/api/service-requests', payload: service })
     expect(res.statusCode).toBe(201)
@@ -128,5 +135,20 @@ describe('limite de envios', () => {
     const blocked = await send()
     expect(blocked.statusCode).toBe(429)
     expect(blocked.json().message).toBe('Muitas tentativas. Aguarde um pouco e tente de novo.')
+  })
+
+  it('sem proxy configurado, trocar o X-Forwarded-For não foge do limite', async () => {
+    const offer = { itemId: 'outro', name: 'Ana Paula', contact: 'ana@exemplo.org', quantity: '1', handover: 'levar' }
+    const send = (app: Awaited<ReturnType<typeof makeApp>>, ip: string) =>
+      app.inject({ method: 'POST', url: '/api/donation-offers', headers: { 'x-forwarded-for': ip }, payload: offer })
+
+    const direct = await makeApp({ FORM_RATE_LIMIT_PER_MINUTE: '1' })
+    expect((await send(direct, '10.0.0.1')).statusCode).toBe(201)
+    expect((await send(direct, '10.0.0.2')).statusCode).toBe(429)
+
+    const behindProxy = await makeApp({ FORM_RATE_LIMIT_PER_MINUTE: '1', TRUST_PROXY: '1' })
+    expect((await send(behindProxy, '10.0.0.1')).statusCode).toBe(201)
+    expect((await send(behindProxy, '10.0.0.2')).statusCode).toBe(201)
+    expect((await send(behindProxy, '10.0.0.2')).statusCode).toBe(429)
   })
 })

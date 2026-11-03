@@ -26,7 +26,8 @@ export const BODY_LIMIT_BYTES = 64 * 1024
 export async function buildApp(config: Config): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: BODY_LIMIT_BYTES,
-    trustProxy: config.TRUST_PROXY,
+    // Confia só nos N proxies mais próximos (o tipo do Fastify não aceita o número direto).
+    trustProxy: (_address: string, hop: number) => config.TRUST_PROXY !== false && hop < config.TRUST_PROXY,
     // Nada de IP, cabeçalhos, query string ou corpo nos logs: podem conter dados pessoais.
     logger: {
       level: config.LOG_LEVEL,

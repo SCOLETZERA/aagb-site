@@ -21,6 +21,12 @@ describe('configuração', () => {
     expect(() => loadConfig({ ...valid, DATABASE_URL: undefined })).toThrow(/DATABASE_URL/)
   })
 
+  it('TRUST_PROXY aceita o número de proxies, nunca "true"', () => {
+    expect(loadConfig({ ...valid, TRUST_PROXY: '1' }).TRUST_PROXY).toBe(1)
+    expect(loadConfig(valid).TRUST_PROXY).toBe(false)
+    expect(() => loadConfig({ ...valid, TRUST_PROXY: 'true' })).toThrow(/TRUST_PROXY/)
+  })
+
   it('exige cookies Secure em produção e bcrypt forte fora dos testes', () => {
     expect(() => loadConfig({ ...valid, NODE_ENV: 'production', COOKIE_SECURE: 'false' })).toThrow(/COOKIE_SECURE/)
     expect(() => loadConfig({ ...valid, BCRYPT_COST: '8' })).toThrow(/BCRYPT_COST/)

@@ -22,11 +22,12 @@ export const orderSchema = z
 export type OrderForm = z.infer<typeof orderSchema>
 
 export const serviceRequestSchema = z.object({
-  serviceId: z.string().min(1, 'Escolha um serviço.'),
+  serviceId: z.string().min(1, 'Escolha um serviço.').max(100, 'Serviço inválido.'),
   name,
   phone,
   locality: z.string().trim().min(2, 'Informe a comunidade ou localidade.').max(120, 'Use no máximo 120 caracteres.'),
-  desiredDate: z.string().refine((v) => v === '' || !Number.isNaN(Date.parse(v)), 'Data inválida.'),
+  // Vazio ou AAAA-MM-DD (o que o campo de data do navegador envia).
+  desiredDate: z.string().refine((v) => v === '' || (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))), 'Data inválida.'),
   details: z.string().trim().max(1000, 'Use no máximo 1000 caracteres.'),
 })
 export type ServiceRequestForm = z.infer<typeof serviceRequestSchema>
@@ -41,7 +42,7 @@ const emailOrPhone = z
   )
 
 export const donationOfferSchema = z.object({
-  itemId: z.string().min(1, 'Escolha o que você quer doar.'),
+  itemId: z.string().min(1, 'Escolha o que você quer doar.').max(100, 'Item inválido.'),
   name,
   contact: emailOrPhone,
   quantity: z.string().trim().min(1, 'Informe a quantidade ou o valor.').max(80, 'Use no máximo 80 caracteres.'),

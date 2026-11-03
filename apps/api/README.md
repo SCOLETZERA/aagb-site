@@ -64,7 +64,7 @@ Erros: `{ "message": "texto em português", "fields"?: { "campo": "erro" } }` co
 ## Produção
 
 - **Banco**: troque `provider` para `"postgresql"` em `prisma/schema.prisma`, aponte `DATABASE_URL` para o Postgres e use `prisma migrate deploy` (gere as migrações com `prisma migrate dev` antes do primeiro deploy).
-- **HTTPS** obrigatório (`COOKIE_SECURE=true`). Atrás de proxy, `TRUST_PROXY=true`.
+- **HTTPS** obrigatório (`COOKIE_SECURE=true`). Atrás de proxy, `TRUST_PROXY=1` (o número de proxies à frente da API); nunca `true`, que aceitaria qualquer `X-Forwarded-For` e anularia o limite por IP.
 - **Mesmo site**: os cookies são `SameSite=Strict`, então o front e a API precisam estar no mesmo site (ex.: `aagb.org.br` e `api.aagb.org.br`).
 - **`UPLOAD_DIR`** precisa estar num disco persistente, com backup junto com o banco.
 - O CSP aqui vale só para as respostas da API; o servidor que entrega o front precisa do próprio CSP.

@@ -48,8 +48,13 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     return reply.status(status).send({ message: FASTIFY_MESSAGES[status] ?? FASTIFY_MESSAGES[400] })
   }
 
-  // Só nome, código e pilha: mensagens de erro do banco podem conter valores enviados.
-  request.log.error({ err: { name: error.name, code: (error as FastifyError).code, stack: error.stack } }, 'erro interno')
+  // Só nome, código e as linhas da pilha. A mensagem fica de fora (inclusive a 1ª linha da pilha, que a repete):
+  // erros do Prisma citam os valores enviados, como nome e telefone.
+  const frames = error.stack
+    ?.split('\n')
+    .filter((line) => line.trimStart().startsWith('at '))
+    .join('\n')
+  request.log.error({ err: { name: error.name, code: (error as FastifyError).code, stack: frames } }, 'erro interno')
   return reply.status(500).send({ message: 'Erro interno. Tente novamente mais tarde.' })
 }
 

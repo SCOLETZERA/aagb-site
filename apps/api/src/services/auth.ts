@@ -47,12 +47,15 @@ export function createAuthService(prisma: PrismaClient, bcryptCost: number) {
       if (user.lockedUntil && user.lockedUntil > now) throw new AppError(401, INVALID_LOGIN)
 
       if (!matches) {
-        const failed = user.failedLogins + 1
-        const minutes = lockMinutes(failed)
-        await prisma.user.update({
+        // Incremento atômico: tentativas em paralelo não podem "perder" falhas e escapar do bloqueio.
+        const { failedLogins } = await prisma.user.update({
           where: { id: user.id },
-          data: { failedLogins: failed, lockedUntil: minutes ? new Date(now.getTime() + minutes * 60_000) : null },
+          data: { failedLogins: { increment: 1 } },
         })
+        const minutes = lockMinutes(failedLogins)
+        if (minutes) {
+          await prisma.user.update({ where: { id: user.id }, data: { lockedUntil: new Date(now.getTime() + minutes * 60_000) } })
+        }
         throw new AppError(401, INVALID_LOGIN)
       }
 

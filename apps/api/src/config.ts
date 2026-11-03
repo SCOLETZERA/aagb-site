@@ -19,7 +19,13 @@ const envSchema = z
       .transform((v) => v.split(',').map((s) => s.trim()).filter(Boolean))
       .pipe(z.array(z.url({ protocol: /^https?$/ })).min(1)),
     COOKIE_SECURE: bool.default(true),
-    TRUST_PROXY: bool.default(false),
+    // false, ou o número de proxies à frente da API (ex.: 1). "true" confiaria em qualquer X-Forwarded-For,
+    // e qualquer pessoa poderia trocar de IP a cada requisição para fugir do limite.
+    TRUST_PROXY: z
+      .string()
+      .regex(/^(false|0|[1-9])$/, 'Use false ou o número de proxies à frente da API (ex.: 1).')
+      .transform((v) => (v === 'false' || v === '0' ? false : Number(v)))
+      .default(false),
     UPLOAD_DIR: z.string().default('./uploads'),
     PERSONAL_DATA_RETENTION_DAYS: z.coerce.number().int().min(30).max(3650).default(365),
     FORM_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(5),

@@ -22,3 +22,12 @@ export async function anonymizeExpired(prisma: PrismaClient, retentionDays: numb
   ])
   return { orders: orders.count, serviceRequests: serviceRequests.count, donationOffers: donationOffers.count }
 }
+
+/** Apaga sessões vencidas ou revogadas há mais de 30 dias (o histórico curto serve para detectar reuso de token). */
+export async function purgeOldSessions(prisma: PrismaClient, now = new Date()) {
+  const before = new Date(now.getTime() - 30 * 86_400_000)
+  const { count } = await prisma.session.deleteMany({
+    where: { OR: [{ expiresAt: { lt: before } }, { revokedAt: { lt: before } }] },
+  })
+  return count
+}

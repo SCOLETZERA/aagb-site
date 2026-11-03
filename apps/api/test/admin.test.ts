@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { anonymizeExpired, REMOVED } from '../src/services/retention.js'
+import { anonymizeExpired, purgeOldSessions, REMOVED } from '../src/services/retention.js'
 import { ORIGIN, loggedIn, makeApp } from './helpers.js'
 
 const app = await makeApp()
@@ -68,6 +68,19 @@ describe('caixa de entrada', () => {
   })
 })
 
+describe('limpeza de sessões', () => {
+  it('apaga só sessões vencidas ou revogadas há mais de 30 dias', async () => {
+    const { user } = await loggedIn(app, 'diretoria')
+    const old = new Date(Date.now() - 40 * 86_400_000)
+    await app.prisma.session.create({ data: { userId: user.id, familyId: 'velha', tokenHash: 'h-velha', expiresAt: old } })
+    await app.prisma.session.create({
+      data: { userId: user.id, familyId: 'revogada', tokenHash: 'h-revogada', expiresAt: new Date(Date.now() + 86_400_000), revokedAt: old },
+    })
+    expect(await purgeOldSessions(app.prisma)).toBe(2)
+    expect(await app.prisma.session.count({ where: { userId: user.id } })).toBe(1)
+  })
+})
+
 describe('conteúdo', () => {
   const news = {
     id: 'reuniao-de-novembro',
@@ -100,6 +113,7 @@ describe('conteúdo', () => {
       { ...news, id: 'Com Espaço' },
       { ...news, id: 'img-js', image: 'javascript:alert(1)' },
       { ...news, id: 'img-http', image: 'http://exemplo.org/x.jpg' },
+      { ...news, id: 'img-outro-site', image: '//exemplo.org/x.jpg' },
       { ...news, id: 'data-ruim', publishedAt: '03/11/2026' },
     ]
     for (const payload of bad) expect((await asBoard('POST', '/api/admin/content/news', payload)).statusCode).toBe(400)
