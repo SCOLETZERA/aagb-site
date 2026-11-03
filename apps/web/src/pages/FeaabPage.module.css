@@ -1,6 +1,6 @@
 .areas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   gap: var(--space-6) var(--space-7);
   margin: 0;
   padding: var(--space-4) 0 var(--space-7);
@@ -47,8 +47,17 @@
 }
 
 .follow a {
+  max-width: 100%;
   background: var(--sun);
   color: var(--sun-ink);
+  /* O @ do Instagram é uma palavra só e comprida: sem isto passa da borda em telas de 320 px. */
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 30rem) {
+  .follow {
+    padding: var(--space-5) var(--space-4);
+  }
 }
 
 .follow a:hover {
