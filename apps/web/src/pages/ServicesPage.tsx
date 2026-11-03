@@ -79,7 +79,7 @@ export function ServicesPage() {
                 <h3>Solicitação enviada</h3>
                 <p>
                   Protocolo <strong>{protocol}</strong>. A associação entrará em contato pelo telefone informado para confirmar data e
-                  valor{chosen ? ` do serviço "${chosen.name}"` : ''}.
+                  valor{chosen ? ` do serviço “${chosen.name}”` : ''}.
                 </p>
                 <Button
                   variant="secondary"

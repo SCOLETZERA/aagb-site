@@ -62,6 +62,7 @@ export function HomePage() {
               alt="Agricultor entregando um maço de cenouras a uma cliente em uma banca de feira"
               width="1100"
               height="705"
+              fetchPriority="high"
             />
           </div>
         </Container>
@@ -107,7 +108,7 @@ export function HomePage() {
           {featured && (
             <div className={styles.news}>
               <Link to={`/noticias/${featured.id}`} className={styles.featured}>
-                {featured.image && <img className={styles.featuredImage} src={featured.image} alt="" />}
+                {featured.image && <img className={styles.featuredImage} src={featured.image} alt="" width="1100" height="705" loading="lazy" />}
                 <span className={styles.date}>{formatDate(featured.publishedAt)}</span>
                 <h3>{featured.title}</h3>
                 <p>{featured.summary}</p>

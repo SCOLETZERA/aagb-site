@@ -70,6 +70,14 @@ textarea {
   color: inherit;
 }
 
+a,
+button,
+select,
+summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--sun) 35%, transparent);
+}
+
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;

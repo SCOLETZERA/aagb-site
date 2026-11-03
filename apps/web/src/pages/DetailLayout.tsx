@@ -24,7 +24,7 @@ export function DetailLayout({ backTo, backLabel, title, lead, paragraphs, icon,
       <BackLink to={backTo}>{backLabel}</BackLink>
       <div className={styles.layout}>
         <article className={styles.article}>
-          {image ? <img className={styles.hero} src={image} alt={imageAlt ?? ''} /> : <IconBadge name={icon} size={32} />}
+          {image ? <img className={styles.hero} src={image} alt={imageAlt ?? ''} width="1280" height="720" /> : <IconBadge name={icon} size={32} />}
           {pill && (
             <div>
               <Pill>{pill}</Pill>

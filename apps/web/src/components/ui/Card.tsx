@@ -30,7 +30,7 @@ interface LinkCardProps {
 export function LinkCard({ to, title, summary, icon, image, imageAlt, badge }: LinkCardProps) {
   return (
     <article className={styles.card}>
-      {image ? <img className={styles.cover} src={image} alt={imageAlt ?? ''} loading="lazy" /> : <IconBadge name={icon} />}
+      {image ? <img className={styles.cover} src={image} alt={imageAlt ?? ''} width="640" height="144" loading="lazy" /> : <IconBadge name={icon} />}
       <h3 className={styles.title}>
         <Link to={to} className={styles.stretch}>
           {title}

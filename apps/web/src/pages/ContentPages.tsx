@@ -35,7 +35,7 @@ export function NewsListPage() {
     <Container>
       <PageHeader title="Notícias" description="O que acontece na associação e nas comunidades de Bálsamos." />
       <div className={styles.search}>
-        <TextField label="Buscar notícias" type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <TextField label="Buscar notícias" type="search" autoComplete="off" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
       {items.length === 0 ? (
         <EmptyState title="Nenhuma notícia encontrada">Tente buscar por outra palavra.</EmptyState>

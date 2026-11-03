@@ -112,7 +112,7 @@ export function DonationsPage() {
                 <Icon name="check" size={32} />
                 <h3>Obrigado pela doação!</h3>
                 <p>
-                  Protocolo <strong>{protocol}</strong>. Registramos sua oferta{itemLabel ? ` de "${itemLabel}"` : ''}. A associação vai falar
+                  Protocolo <strong>{protocol}</strong>. Registramos sua oferta{itemLabel ? ` de “${itemLabel}”` : ''}. A associação vai falar
                   com você pelo contato informado para combinar a entrega.
                 </p>
                 <Button

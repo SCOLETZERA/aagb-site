@@ -46,6 +46,11 @@
   background-position: right 0.8rem center;
 }
 
+.select option {
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
 .error {
   color: var(--danger);
   font-size: var(--text-sm);

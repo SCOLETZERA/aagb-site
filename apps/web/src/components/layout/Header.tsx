@@ -19,7 +19,7 @@ export function Header() {
       <div className={styles.bar}>
         <Link to="/" className={styles.brand} aria-label="AAGB, página inicial">
           <img src="/img/logo.png" alt="" width="56" height="56" className={styles.logo} />
-          <span className={styles.name}>
+          <span className={styles.name} translate="no">
             AAGB
             <small>Agricultura Familiar de Bálsamos</small>
           </span>

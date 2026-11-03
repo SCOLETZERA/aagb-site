@@ -95,7 +95,7 @@ export function ProductsPage() {
       <PageHeader title="Produtos" description="Direto de quem planta e cria. Monte o pedido e a associação combina a entrega com você." />
       <div className={styles.shop}>
         <aside className={styles.filters} aria-label="Filtros">
-          <TextField label="Buscar" type="search" value={query} onChange={(e) => update('q', e.target.value)} />
+          <TextField label="Buscar" type="search" autoComplete="off" value={query} onChange={(e) => update('q', e.target.value)} />
           <fieldset className={styles.chips}>
             <legend>Categorias</legend>
             {categories.map((c) => (
