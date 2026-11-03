@@ -1,0 +1,109 @@
+.iconBadge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+  background: var(--sun);
+  color: var(--sun-ink);
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.15rem 0.7rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.sun {
+  background: var(--sun);
+  color: var(--sun-ink);
+}
+
+.leaf {
+  background: var(--leaf);
+  color: #fff;
+}
+
+.water {
+  background: var(--water);
+  color: #fff;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.card:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+
+.cover {
+  width: calc(100% + 2 * var(--space-5));
+  max-width: none;
+  height: 9rem;
+  margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-5)) 0;
+  object-fit: cover;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.title {
+  font-size: var(--text-lg);
+}
+
+.stretch {
+  color: inherit;
+  text-decoration: none;
+}
+
+.stretch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.stretch:focus-visible {
+  outline: none;
+}
+
+.card:has(.stretch:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.summary {
+  color: var(--ink-soft);
+  flex: 1;
+}
+
+.progress {
+  height: 0.65rem;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--sun);
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card:hover {
+    transform: none;
+  }
+}

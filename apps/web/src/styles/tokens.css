@@ -1,0 +1,72 @@
+/* Tokens de design da AAGB. Cores tiradas da logo: sol, campo e faixa verde. */
+:root {
+  color-scheme: light;
+
+  --forest: #14402a;
+  --leaf: #2f7d3f;
+  --sun: #f2b518;
+  --sun-ink: #2a2105;
+  --water: #1f6f78;
+
+  --paper: #f3f5ee;
+  --surface: #ffffff;
+  --ink: #15251b;
+  --ink-soft: #4a5c4f;
+  --line: #d6dfcd;
+  --brand: #14402a;
+  --brand-ink: #ffffff;
+  --header-bg: #14402a;
+  --accent-text: #8a5d00;
+  --danger: #b3321f;
+  --danger-bg: #fbeae6;
+  --success: #1f6b34;
+  --focus: #1f6f78;
+
+  --font-display: 'Bricolage Grotesque Variable', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  --font-body: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --text-sm: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --text-2xl: clamp(1.9rem, 1.3rem + 2.6vw, 3.1rem);
+  --text-hero: clamp(2.3rem, 1.4rem + 4.2vw, 4.4rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  --shadow-pop: 0 10px 30px rgba(10, 30, 18, 0.28);
+  --measure: 66ch;
+  --page-width: 1180px;
+  --gutter: clamp(1rem, 4vw, 2rem);
+  --header-height: 4.5rem;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --paper: #0e1711;
+  --surface: #17231b;
+  --ink: #e8efe3;
+  --ink-soft: #a7b8ab;
+  --line: #2b3b30;
+  --brand: #9fd8a8;
+  --brand-ink: #0e1711;
+  --header-bg: #0b2216;
+  --accent-text: #f2c14e;
+  --danger: #ff9b8a;
+  --danger-bg: #3a1a15;
+  --success: #8fd19e;
+  --focus: #6fc2cc;
+}
