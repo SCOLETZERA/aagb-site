@@ -185,5 +185,32 @@
 
   .filters {
     position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-3);
+  }
+
+  /* Busca e ordenação lado a lado; categorias numa linha rolável embaixo. */
+  .filters > :nth-child(1) {
+    grid-area: 1 / 1;
+  }
+
+  .filters > :nth-child(3) {
+    grid-area: 1 / 2;
+  }
+
+  .filters > :nth-child(2) {
+    grid-area: 2 / 1 / 3 / 3;
+  }
+
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    scrollbar-width: thin;
+  }
+
+  .chip {
+    flex: none;
   }
 }
