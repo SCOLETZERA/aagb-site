@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { Suspense, lazy } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
 import { HomePage } from './pages/HomePage'
@@ -17,11 +17,21 @@ const DonationsPage = lazy(() => import('./pages/DonationsPage').then((m) => ({ 
 const FeaabPage = lazy(() => import('./pages/FeaabPage').then((m) => ({ default: m.FeaabPage })))
 const TransparencyPage = lazy(() => import('./pages/TransparencyPage').then((m) => ({ default: m.TransparencyPage })))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
+// Painel administrativo: pacote separado, que quem só visita o site nunca baixa.
+const AdminApp = lazy(() => import('./features/admin/AdminApp').then((m) => ({ default: m.AdminApp })))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 
 export function App() {
   return (
     <Routes>
+      <Route
+        path="admin/*"
+        element={
+          <Suspense fallback={null}>
+            <AdminApp />
+          </Suspense>
+        }
+      />
       <Route element={<AppShell />}>
         <Route index element={<HomePage />} />
         <Route path="noticias" element={<NewsListPage />} />
