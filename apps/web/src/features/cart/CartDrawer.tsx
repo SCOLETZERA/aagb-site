@@ -6,6 +6,7 @@ import { Drawer } from '@/components/ui/Drawer'
 import { Icon } from '@/components/ui/Icon'
 import { formatMoney } from '@/lib/format'
 import { useForm } from '@/hooks/useForm'
+import { orderMessage, whatsappNumber, whatsappUrl } from '@/lib/whatsapp'
 import { orderSchema } from '@/schemas/forms'
 import { api } from '@/services'
 import { useCart } from './CartContext'
@@ -27,6 +28,14 @@ export function CartDrawer() {
     actions.clear()
     form.reset()
     setProtocol(receipt.protocol)
+  })
+
+  const whatsapp = whatsappNumber(import.meta.env.VITE_WHATSAPP_NUMBER)
+
+  /** O pedido segue pelo WhatsApp do próprio usuário; só abrimos a conversa com a mensagem pronta. */
+  const sendWhatsapp = form.handleSubmit((order) => {
+    if (!whatsapp) return
+    window.open(whatsappUrl(whatsapp, orderMessage(order, state.lines, state.totalCents)), '_blank', 'noopener,noreferrer')
   })
 
   return (
@@ -99,6 +108,12 @@ export function CartDrawer() {
             <Button type="submit" fullWidth size="lg" disabled={form.submitting}>
               {form.submitting ? 'Enviando…' : 'Enviar pedido'}
             </Button>
+            {whatsapp && (
+              <Button variant="secondary" fullWidth className={styles.second} onClick={sendWhatsapp} disabled={form.submitting}>
+                Enviar pelo WhatsApp
+                <span className="visually-hidden"> (abre em nova aba)</span>
+              </Button>
+            )}
             <p className={styles.note}>Não há pagamento online. A associação combina o valor e a entrega com você.</p>
           </form>
         </>

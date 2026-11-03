@@ -61,6 +61,10 @@
   color: var(--brand);
 }
 
+.second {
+  margin-top: var(--space-3);
+}
+
 .note {
   margin-top: var(--space-3);
   color: var(--ink-soft);
