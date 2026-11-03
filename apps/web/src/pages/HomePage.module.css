@@ -155,7 +155,13 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 25%, rgba(8, 24, 14, 0.85));
+  /* Escurece cedo: o título começa no meio da foto e precisa de contraste mesmo sobre áreas claras. */
+  background: linear-gradient(180deg, rgba(8, 24, 14, 0.1) 0%, rgba(8, 24, 14, 0.74) 35%, rgba(8, 24, 14, 0.94) 100%);
+}
+
+.featured h3,
+.featured p {
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
 }
 
 .featured:hover {
