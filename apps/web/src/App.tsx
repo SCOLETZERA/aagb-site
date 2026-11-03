@@ -14,6 +14,8 @@ const ProductsPage = lazy(() => import('./pages/ProductsPage').then((m) => ({ de
 const ProductDetailPage = lazy(() => import('./pages/ProductsPage').then((m) => ({ default: m.ProductDetailPage })))
 const ServicesPage = lazy(() => import('./pages/ServicesPage').then((m) => ({ default: m.ServicesPage })))
 const DonationsPage = lazy(() => import('./pages/DonationsPage').then((m) => ({ default: m.DonationsPage })))
+const FeaabPage = lazy(() => import('./pages/FeaabPage').then((m) => ({ default: m.FeaabPage })))
+const TransparencyPage = lazy(() => import('./pages/TransparencyPage').then((m) => ({ default: m.TransparencyPage })))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 
 export function App() {
@@ -31,6 +33,8 @@ export function App() {
         <Route path="produtos/:id" element={<ProductDetailPage />} />
         <Route path="servicos" element={<ServicesPage />} />
         <Route path="doacoes" element={<DonationsPage />} />
+        <Route path="feira" element={<FeaabPage />} />
+        <Route path="transparencia" element={<TransparencyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

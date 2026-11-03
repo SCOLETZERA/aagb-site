@@ -1,4 +1,14 @@
-import type { Article, Donation, Need, Partner, Product, Project, Receipt, ServiceOffer } from '@/domain/types'
+import type {
+  Article,
+  Donation,
+  Need,
+  Partner,
+  Product,
+  Project,
+  Receipt,
+  ServiceOffer,
+  TransparencyDocument,
+} from '@/domain/types'
 import type { DonationOfferForm, OrderForm, ServiceRequestForm } from '@/schemas/forms'
 
 export interface OrderLine {
@@ -25,6 +35,7 @@ export interface Api {
   listServices(): Promise<ServiceOffer[]>
   listNeeds(): Promise<Need[]>
   listDonations(): Promise<Donation[]>
+  listDocuments(): Promise<TransparencyDocument[]>
   submitOrder(order: OrderForm, lines: OrderLine[]): Promise<Receipt>
   requestService(request: ServiceRequestForm): Promise<Receipt>
   offerDonation(offer: DonationOfferForm): Promise<Receipt>

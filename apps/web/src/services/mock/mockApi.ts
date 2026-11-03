@@ -32,6 +32,7 @@ export const mockApi: Api = {
   listServices: () => delay(data.services),
   listNeeds: () => delay(data.needs),
   listDonations: () => delay(data.donations),
+  listDocuments: () => delay(data.documents),
 
   async submitOrder(_order, lines) {
     checkStock(lines)

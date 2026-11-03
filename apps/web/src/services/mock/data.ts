@@ -1,4 +1,7 @@
-import type { Article, Donation, Need, Partner, Product, Project, ServiceOffer } from '@/domain/types'
+import type { Article, Donation, Need, Partner, Product, Project, ServiceOffer, TransparencyDocument } from '@/domain/types'
+
+/** Ainda sem documentos reais publicados: a página mostra o aviso de lista vazia. */
+export const documents: TransparencyDocument[] = []
 
 /**
  * DADOS DE EXEMPLO vindos do protótipo V3. Não são informações reais da associação:

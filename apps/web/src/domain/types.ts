@@ -82,6 +82,23 @@ export interface Donation {
   usage: string
 }
 
+export const DOCUMENT_CATEGORIES = [
+  { id: 'prestacao-de-contas', label: 'Prestação de contas', hint: 'Relatórios financeiros e de atividades da diretoria.' },
+  { id: 'convenio', label: 'Convênios e parcerias', hint: 'Convênios públicos e parcerias com órgãos de governo.' },
+  { id: 'edital', label: 'Editais', hint: 'Editais e chamadas públicas, como as do PAA e do PNAE.' },
+  { id: 'ata', label: 'Atas e estatuto', hint: 'Atas de assembleia e documentos de formação da associação.' },
+] as const
+export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number]['id']
+
+export interface TransparencyDocument {
+  id: Id
+  title: string
+  category: DocumentCategory
+  publishedAt: string
+  /** Endereço do arquivo (PDF) para download. */
+  url: string
+}
+
 export interface Receipt {
   /** Número de protocolo mostrado ao usuário (ex.: PD-1234). */
   protocol: string

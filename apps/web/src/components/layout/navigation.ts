@@ -2,10 +2,16 @@ export const NAV_ITEMS = [
   { to: '/', label: 'Início', end: true },
   { to: '/noticias', label: 'Notícias', end: false },
   { to: '/projetos', label: 'Projetos', end: false },
+  { to: '/feira', label: 'Feira', end: false },
   { to: '/produtos', label: 'Produtos', end: false },
   { to: '/servicos', label: 'Serviços', end: false },
   { to: '/doacoes', label: 'Doações', end: false },
-  { to: '/parceiros', label: 'Parceiros', end: false },
+] as const
+
+/** Páginas institucionais, listadas no rodapé para não lotar o menu principal. */
+export const FOOTER_LINKS = [
+  { to: '/parceiros', label: 'Parceiros' },
+  { to: '/transparencia', label: 'Transparência' },
 ] as const
 
 export const ASSOCIATION = {

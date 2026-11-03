@@ -3,7 +3,7 @@ import { Icon } from '@/components/ui/Icon'
 import { Container } from '@/components/ui/Layout'
 import { useResource } from '@/hooks/useResource'
 import { api } from '@/services'
-import { ASSOCIATION } from './navigation'
+import { ASSOCIATION, FOOTER_LINKS } from './navigation'
 import styles from './Footer.module.css'
 
 export function Footer() {
@@ -32,6 +32,17 @@ export function Footer() {
                 <span className="visually-hidden"> (abre em nova aba)</span>
               </a>
             </p>
+          </div>
+
+          <div>
+            <h2>Institucional</h2>
+            <ul className={styles.partners}>
+              {FOOTER_LINKS.map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to}>{l.label}</Link>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div>
