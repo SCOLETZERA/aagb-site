@@ -17,6 +17,8 @@
   margin: 0 0 var(--space-4);
   padding: 0;
   border: 0;
+  /* O <fieldset> tem largura mínima igual ao conteúdo; sem isto as categorias alargam a página inteira no celular. */
+  min-width: 0;
 }
 
 .chips legend {
@@ -190,7 +192,7 @@
     column-gap: var(--space-3);
   }
 
-  /* Busca e ordenação lado a lado; categorias numa linha rolável embaixo. */
+  /* Busca e ordenação lado a lado; categorias embaixo, quebrando em linhas (sem rolagem lateral). */
   .filters > :nth-child(1) {
     grid-area: 1 / 1;
   }
@@ -201,16 +203,5 @@
 
   .filters > :nth-child(2) {
     grid-area: 2 / 1 / 3 / 3;
-  }
-
-  .chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: var(--space-2);
-    scrollbar-width: thin;
-  }
-
-  .chip {
-    flex: none;
   }
 }
