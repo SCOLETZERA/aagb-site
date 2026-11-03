@@ -31,7 +31,8 @@ describe('App', () => {
   it('lista produtos e adiciona um ao carrinho', async () => {
     const user = userEvent.setup()
     renderAt('/produtos')
-    const buttons = await screen.findAllByRole('button', { name: /adicionar ao carrinho/i })
+    // A página carrega sob demanda (import dinâmico) e pode demorar quando os testes rodam em paralelo.
+    const buttons = await screen.findAllByRole('button', { name: /adicionar ao carrinho/i }, { timeout: 5000 })
     await user.click(buttons[0]!)
     expect(await screen.findByRole('button', { name: /carrinho, 1 item/i })).toBeInTheDocument()
   })
