@@ -3,3 +3,6 @@ dist
 .env
 *.db
 *.db-journal
+.claude/
+*.tsbuildinfo
+coverage
