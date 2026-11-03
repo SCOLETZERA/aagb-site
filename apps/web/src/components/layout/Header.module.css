@@ -45,7 +45,7 @@
   display: block;
   margin-top: 0.2rem;
   font-family: var(--font-body);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 400;
   opacity: 0.85;
 }
@@ -109,7 +109,7 @@
   border-radius: var(--radius-pill);
   background: var(--sun);
   color: var(--sun-ink);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   line-height: 1.25rem;
   text-align: center;
