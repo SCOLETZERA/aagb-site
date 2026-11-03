@@ -194,7 +194,8 @@ describe('CSRF e papéis', () => {
     const user = await createUser(app, 'diretoria')
     await Promise.all(Array.from({ length: 8 }, () => login(app, user.email, 'senha-errada-qualquer')))
     const saved = await app.prisma.user.findUniqueOrThrow({ where: { id: user.id } })
-    expect(saved.failedLogins).toBe(8)
+    // Com a conta já bloqueada, as últimas tentativas são recusadas sem contar; sem o incremento atômico ficaria em 1.
+    expect(saved.failedLogins).toBeGreaterThanOrEqual(MAX_FAILED_LOGINS)
     expect(saved.lockedUntil!.getTime()).toBeGreaterThan(Date.now())
     expect((await login(app, user.email)).statusCode).toBe(401)
   })

@@ -17,7 +17,7 @@ const PAGE_SIZE = 50
 const TEXT: Record<Kind, { title: string; description: string; one: string; empty: string }> = {
   orders: {
     title: 'Pedidos',
-    description: 'Pedidos de produtos feitos pelo site. Preço e total já vêm conferidos com o estoque.',
+    description: 'Pedidos feitos pelo site, com preço e total do cadastro. O estoque só baixa quando você marca o pedido como concluído.',
     one: 'pedido',
     empty: 'Nenhum pedido aqui.',
   },
@@ -107,7 +107,8 @@ function InboxItem({ kind, row, onChanged }: { kind: Kind; row: Row; onChanged()
   function changeStatus(next: InboxStatus) {
     if (next === row.status) return
     if (kind === 'orders' && next === 'cancelado') {
-      const ok = window.confirm(`Cancelar o pedido ${row.protocol}? Os itens voltam ao estoque e o pedido não pode ser reaberto.`)
+      const back = row.status === 'concluido' ? ' Os itens voltam ao estoque.' : ''
+      const ok = window.confirm(`Cancelar o pedido ${row.protocol}? Ele não poderá ser reaberto.${back}`)
       if (!ok) return
     }
     void act(

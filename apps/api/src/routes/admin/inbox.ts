@@ -1,8 +1,9 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { AppError, notFound } from '../../lib/errors.js'
+import { notFound } from '../../lib/errors.js'
 import { adminOf, requireRole } from '../../plugins/auth.js'
 import { audit } from '../../services/audit.js'
+import { changeOrderStatus } from '../../services/orders.js'
 import { ANONYMIZED } from '../../services/retention.js'
 import { idParams } from '../public.js'
 
@@ -33,23 +34,11 @@ export async function inboxRoutes(app: FastifyInstance) {
 
   app.get('/orders', async (req) => db.order.findMany({ ...page(req.query), include: { lines: true } }))
 
-  /** Cancelar devolve os itens ao estoque. Um pedido cancelado não volta a ficar ativo. */
+  /** Concluir baixa o estoque; sair de concluído devolve. Um pedido cancelado não volta a ficar ativo. */
   app.patch('/orders/:id', async (req) => {
     const { id } = idParams.parse(req.params)
     const { status } = statusBody.parse(req.body)
-    const updated = await db.$transaction(async (tx) => {
-      const order = await tx.order.findUnique({ where: { id }, include: { lines: true } })
-      if (!order) throw notFound('Pedido não encontrado.')
-      if (order.status === 'cancelado') throw new AppError(409, 'Pedido cancelado não pode ser reaberto.')
-      const { count } = await tx.order.updateMany({ where: { id, status: { not: 'cancelado' } }, data: { status } })
-      if (count === 0) throw new AppError(409, 'Pedido cancelado não pode ser reaberto.')
-      if (status === 'cancelado') {
-        for (const line of order.lines) {
-          await tx.product.update({ where: { id: line.productId }, data: { stock: { increment: line.quantity } } })
-        }
-      }
-      return tx.order.findUniqueOrThrow({ where: { id }, include: { lines: true } })
-    })
+    const updated = await changeOrderStatus(db, id, status)
     await audit(db, adminOf(req).id, `order.status.${status}`, `order:${id}`)
     return updated
   })

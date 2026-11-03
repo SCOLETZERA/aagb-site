@@ -1,6 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
 import { describe, expect, it } from 'vitest'
-import { createOrder } from '../src/services/orders.js'
 import { makeApp } from './helpers.js'
 
 const app = await makeApp()
@@ -11,7 +9,7 @@ const order = (lines: unknown, extra: object = {}) =>
 const stockOf = async (id: string) => (await app.prisma.product.findUniqueOrThrow({ where: { id } })).stock
 
 describe('pedido', () => {
-  it('cria o pedido com preço do banco, baixa o estoque e devolve protocolo', async () => {
+  it('cria o pedido com preço do banco, sem baixar o estoque, e devolve protocolo', async () => {
     const before = await stockOf('alface-crespa')
     const res = await order([{ productId: 'alface-crespa', quantity: 2, priceCents: 1 }], { totalCents: 1 })
     expect(res.statusCode).toBe(201)
@@ -21,7 +19,8 @@ describe('pedido', () => {
     const saved = await app.prisma.order.findUniqueOrThrow({ where: { protocol }, include: { lines: true } })
     expect(saved.totalCents).toBe(600)
     expect(saved.lines[0]).toMatchObject({ unitPriceCents: 300, quantity: 2, productName: 'Alface crespa' })
-    expect(await stockOf('alface-crespa')).toBe(before - 2)
+    // A baixa só acontece quando a diretoria conclui o pedido.
+    expect(await stockOf('alface-crespa')).toBe(before)
   })
 
   it('só guarda o endereço quando é entrega', async () => {
@@ -42,27 +41,13 @@ describe('pedido', () => {
     expect(await stockOf('feijao-de-corda')).toBe(stock)
   })
 
-  it('pedidos simultâneos não vendem o mesmo item duas vezes', async () => {
+  it('pedidos falsos não esgotam a vitrine: o estoque só muda ao concluir', async () => {
     await app.prisma.product.update({ where: { id: 'queijo-coalho' }, data: { stock: 1 } })
-    const results = await Promise.all(
-      Array.from({ length: 5 }, () => order([{ productId: 'queijo-coalho', quantity: 1 }])),
-    )
-    expect(results.filter((r) => r.statusCode === 201)).toHaveLength(1)
-    expect(results.filter((r) => r.statusCode === 409)).toHaveLength(4)
-    expect(await stockOf('queijo-coalho')).toBe(0)
-  })
-
-  it('a baixa condicional barra a venda mesmo se a leitura do estoque estiver desatualizada', async () => {
-    // No SQLite as transações já rodam em fila, então o teste acima passaria mesmo sem a proteção.
-    // Aqui a leitura mente (estoque 999), como pode acontecer entre transações no Postgres.
-    await app.prisma.product.update({ where: { id: 'milho-5kg' }, data: { stock: 1 } })
-    const stale = app.prisma.$extends({
-      query: { product: { findMany: async ({ args, query }) => (await query(args)).map((p) => ({ ...p, stock: 999 })) } },
-    }) as unknown as PrismaClient
-    await expect(createOrder(stale, { ...customer, delivery: 'retirada' }, [{ productId: 'milho-5kg', quantity: 2 }])).rejects.toMatchObject({
-      status: 409,
-    })
-    expect(await stockOf('milho-5kg')).toBe(1)
+    const results = await Promise.all(Array.from({ length: 5 }, () => order([{ productId: 'queijo-coalho', quantity: 1 }])))
+    expect(results.every((r) => r.statusCode === 201)).toBe(true)
+    expect(await stockOf('queijo-coalho')).toBe(1)
+    // Pedir mais do que existe agora continua recusado.
+    expect((await order([{ productId: 'queijo-coalho', quantity: 2 }])).statusCode).toBe(409)
   })
 
   it('produto inexistente ou inativo dá 422', async () => {

@@ -38,15 +38,35 @@ describe('caixa de entrada', () => {
     expect((await asBoard('GET', '/api/admin/orders?status=qualquer')).statusCode).toBe(400)
   })
 
-  it('cancelar devolve o estoque e o pedido não pode ser reaberto', async () => {
+  it('concluir baixa o estoque, reabrir devolve e cancelado é final', async () => {
+    const setStatus = (id: string, status: string) => asBoard('PATCH', `/api/admin/orders/${id}`, { status })
     const before = await stockOf('mel-500g')
     const order = await placeOrder('mel-500g', 3)
+    expect(await stockOf('mel-500g')).toBe(before)
+
+    expect((await setStatus(order.id, 'concluido')).statusCode).toBe(200)
     expect(await stockOf('mel-500g')).toBe(before - 3)
-    await asBoard('PATCH', `/api/admin/orders/${order.id}`, { status: 'cancelado' })
+    expect((await setStatus(order.id, 'concluido')).statusCode).toBe(200)
+    expect(await stockOf('mel-500g')).toBe(before - 3)
+
+    expect((await setStatus(order.id, 'em-andamento')).statusCode).toBe(200)
     expect(await stockOf('mel-500g')).toBe(before)
-    const reopen = await asBoard('PATCH', `/api/admin/orders/${order.id}`, { status: 'novo' })
-    expect(reopen.statusCode).toBe(409)
+
+    expect((await setStatus(order.id, 'cancelado')).statusCode).toBe(200)
     expect(await stockOf('mel-500g')).toBe(before)
+    expect((await setStatus(order.id, 'novo')).statusCode).toBe(409)
+  })
+
+  it('dois pedidos pelo último item: só o primeiro conclui, o segundo explica o que falta', async () => {
+    await app.prisma.product.update({ where: { id: 'milho-5kg' }, data: { stock: 1 } })
+    const first = await placeOrder('milho-5kg', 1)
+    const second = await placeOrder('milho-5kg', 1)
+    expect((await asBoard('PATCH', `/api/admin/orders/${first.id}`, { status: 'concluido' })).statusCode).toBe(200)
+    const blocked = await asBoard('PATCH', `/api/admin/orders/${second.id}`, { status: 'concluido' })
+    expect(blocked.statusCode).toBe(409)
+    expect(blocked.json().message).toBe('Não dá para concluir: só há 0 de "Milho em grão 5 kg" em estoque e o pedido pede 1.')
+    expect(await stockOf('milho-5kg')).toBe(0)
+    expect((await app.prisma.order.findUniqueOrThrow({ where: { id: second.id } })).status).toBe('novo')
   })
 
   it('anonimiza um pedido a pedido do titular', async () => {
