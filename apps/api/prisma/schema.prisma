@@ -1,0 +1,225 @@
+// Esquema do banco da AAGB.
+//
+// Desenvolvimento e testes usam SQLite. Em produção, troque `provider` para "postgresql"
+// e aponte DATABASE_URL para o Postgres. Por compatibilidade com o SQLite:
+//   - listas (`body`) ficam como texto JSON;
+//   - valores fixos (status, papéis, categorias) ficam como texto e são validados com Zod na API.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Conteúdo público ----------
+
+model Article {
+  id          String   @id
+  title       String
+  publishedAt String // AAAA-MM-DD
+  summary     String
+  body        String // JSON: string[]
+  icon        String
+  image       String?
+  imageAlt    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Project {
+  id        String   @id
+  title     String
+  status    String
+  summary   String
+  body      String // JSON: string[]
+  icon      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Partner {
+  id        String   @id
+  name      String
+  kind      String
+  summary   String
+  body      String // JSON: string[]
+  icon      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String      @id
+  name        String
+  category    String
+  priceCents  Int
+  unit        String
+  producer    String
+  description String
+  stock       Int
+  icon        String
+  /// Produto "excluído" fica inativo para não quebrar pedidos antigos.
+  active      Boolean     @default(true)
+  orderLines  OrderLine[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model ServiceOffer {
+  id          String   @id
+  name        String
+  priceLabel  String
+  leadTime    String
+  audience    String
+  description String
+  icon        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Need {
+  id        String   @id
+  name      String
+  unit      String
+  goal      Int
+  received  Int
+  icon      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Donation {
+  id         String   @id
+  receivedAt String // AAAA-MM-DD
+  donor      String
+  item       String
+  quantity   String
+  category   String
+  usage      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model TransparencyDocument {
+  id          String   @id
+  title       String
+  category    String
+  publishedAt String // AAAA-MM-DD
+  /// Nome aleatório do arquivo no disco; nunca vem do usuário.
+  storedName  String   @unique
+  sizeBytes   Int
+  createdAt   DateTime @default(now())
+}
+
+// ---------- Entradas dos formulários públicos (contêm dados pessoais) ----------
+
+model Order {
+  id           String      @id @default(cuid())
+  protocol     String      @unique
+  status       String      @default("novo")
+  name         String
+  phone        String
+  delivery     String
+  address      String
+  totalCents   Int
+  lines        OrderLine[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  /// Preenchido quando os dados pessoais foram apagados (LGPD).
+  anonymizedAt DateTime?
+
+  @@index([status, createdAt])
+}
+
+model OrderLine {
+  id             String  @id @default(cuid())
+  orderId        String
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product @relation(fields: [productId], references: [id])
+  /// Cópia do nome e do preço no momento do pedido.
+  productName    String
+  unitPriceCents Int
+  quantity       Int
+}
+
+model ServiceRequest {
+  id           String    @id @default(cuid())
+  protocol     String    @unique
+  status       String    @default("novo")
+  serviceId    String
+  serviceName  String
+  name         String
+  phone        String
+  locality     String
+  desiredDate  String
+  details      String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  anonymizedAt DateTime?
+
+  @@index([status, createdAt])
+}
+
+model DonationOffer {
+  id           String    @id @default(cuid())
+  protocol     String    @unique
+  status       String    @default("novo")
+  itemId       String
+  itemName     String
+  name         String
+  contact      String
+  quantity     String
+  handover     String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  anonymizedAt DateTime?
+
+  @@index([status, createdAt])
+}
+
+// ---------- Painel administrativo ----------
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         String // "admin" | "diretoria"
+  active       Boolean    @default(true)
+  failedLogins Int        @default(0)
+  lockedUntil  DateTime?
+  sessions     Session[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+/// Refresh tokens. Só o hash SHA-256 do token é guardado.
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  /// Todos os tokens gerados a partir do mesmo login. Reuso de um token antigo revoga a família.
+  familyId  String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([familyId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  target    String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

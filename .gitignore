@@ -6,3 +6,5 @@ dist
 .claude/
 *.tsbuildinfo
 coverage
+test/.tmp
+uploads
