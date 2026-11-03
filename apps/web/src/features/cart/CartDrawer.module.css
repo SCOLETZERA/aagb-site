@@ -1,0 +1,86 @@
+.lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.sub {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.qty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+}
+
+.qty button {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1.5px solid var(--brand);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.qty button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qty span {
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-block: var(--space-4);
+  font-size: var(--text-lg);
+}
+
+.total strong {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--brand);
+}
+
+.note {
+  margin-top: var(--space-3);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.empty,
+.done {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+}
+
+.done svg {
+  color: var(--success);
+}
+
+.browse {
+  color: var(--brand);
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
