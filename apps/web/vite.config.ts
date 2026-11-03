@@ -13,5 +13,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Os testes usam sempre os dados de exemplo, mesmo com VITE_API_URL no .env.local.
+    env: { VITE_API_URL: '' },
   },
 })
