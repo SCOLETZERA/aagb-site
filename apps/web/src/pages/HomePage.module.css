@@ -168,9 +168,11 @@
   transform: translateY(-3px);
 }
 
+/* Maior que os títulos de seção (--text-xl) para a notícia em destaque liderar a hierarquia. */
 .featured h3 {
   color: #fff;
-  font-size: var(--text-xl);
+  font-size: clamp(1.75rem, 1.25rem + 1.9vw, 2.6rem);
+  line-height: 1.08;
 }
 
 .featured p {
@@ -277,6 +279,7 @@
 
   .featured {
     min-height: 18rem;
+    padding: var(--space-5);
   }
 }
 

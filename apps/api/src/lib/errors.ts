@@ -1,5 +1,6 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify'
 import { ZodError } from 'zod'
+import { REQUIRED_MESSAGE } from './zod-messages.js'
 
 /** Erro com mensagem pensada para o usuário final (em português) e status HTTP. */
 export class AppError extends Error {
@@ -25,7 +26,9 @@ function zodBody(error: ZodError): ErrorBody {
     const key = issue.path.map(String).join('.')
     if (key && !(key in fields)) fields[key] = issue.message
   }
-  return { message: error.issues[0]?.message ?? 'Confira os dados enviados.', fields }
+  const first = error.issues[0]?.message
+  const message = first === REQUIRED_MESSAGE ? 'Preencha todos os campos obrigatórios.' : (first ?? 'Confira os dados enviados.')
+  return { message, fields }
 }
 
 /** Mensagens para os erros do próprio Fastify, sem detalhes internos. */

@@ -20,6 +20,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-height: 2.75rem;
   margin-right: auto;
   color: inherit;
   font-family: var(--font-display);
@@ -97,9 +98,11 @@
   display: flex;
   gap: var(--space-1);
   margin: 0;
-  padding: 0 0 var(--space-2);
+  padding: 0 var(--space-6) var(--space-2) 0;
   list-style: none;
   overflow-x: auto;
+  /* O esmaecido na borda direita avisa que há mais itens além da tela. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
 }
 
 @media (min-width: 60rem) {
@@ -111,6 +114,8 @@
   .nav ul {
     flex-direction: column;
     overflow: visible;
+    padding-right: 0;
+    mask-image: none;
   }
 
   .navGroup {

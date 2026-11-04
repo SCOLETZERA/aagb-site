@@ -66,6 +66,15 @@ describe('pedido', () => {
     })
   })
 
+  it('responde em português mesmo quando faltam campos inteiros', async () => {
+    const res = await app.inject({ method: 'POST', url: '/api/orders', payload: {} })
+    expect(res.statusCode).toBe(400)
+    const { message, fields } = res.json()
+    for (const text of [message, ...Object.values<string>(fields)]) expect(text).not.toMatch(/invalid|expected|received|undefined/i)
+    expect(message).toBe('Preencha todos os campos obrigatórios.')
+    expect(fields).toMatchObject({ order: 'Campo obrigatório.', lines: 'Campo obrigatório.' })
+  })
+
   it('recusa tipos errados, carrinho vazio e quantidades absurdas', async () => {
     expect((await order([])).json().message).toBe('Seu carrinho está vazio.')
     expect((await order([{ productId: 'alface-crespa', quantity: '2' }])).statusCode).toBe(400)
