@@ -16,10 +16,10 @@ const b64 = (value: object) => Buffer.from(JSON.stringify(value)).toString('base
 
 describe('login', () => {
   it('define cookies HttpOnly e SameSite=Strict e não devolve tokens no corpo', async () => {
-    const user = await createUser(app, 'diretoria')
+    const user = await createUser(app)
     const res = await login(app, user.email.toUpperCase())
     expect(res.statusCode).toBe(200)
-    expect(res.json()).toEqual({ user: { id: user.id, email: user.email, name: user.name, role: 'diretoria' } })
+    expect(res.json()).toEqual({ user: { id: user.id, email: user.email, name: user.name } })
     const access = res.cookies.find((c) => c.name === ACCESS_COOKIE)!
     const refreshCookie = res.cookies.find((c) => c.name === REFRESH_COOKIE)!
     expect(access).toMatchObject({ httpOnly: true, sameSite: 'Strict', path: '/api/admin' })
@@ -29,7 +29,7 @@ describe('login', () => {
   })
 
   it('não revela se o e-mail existe', async () => {
-    const user = await createUser(app, 'diretoria')
+    const user = await createUser(app)
     const wrong = await login(app, user.email, 'senha-errada-qualquer')
     const unknown = await login(app, 'ninguem@aagb.test', 'senha-errada-qualquer')
     const malformed = await app.inject({
@@ -45,7 +45,7 @@ describe('login', () => {
   })
 
   it('bloqueia a conta depois de 5 falhas seguidas, mesmo com a senha certa', async () => {
-    const user = await createUser(app, 'diretoria')
+    const user = await createUser(app)
     for (let i = 0; i < MAX_FAILED_LOGINS; i++) await login(app, user.email, 'senha-errada-qualquer')
     const locked = await login(app, user.email, PASSWORD)
     expect(locked.statusCode).toBe(401)
@@ -64,7 +64,7 @@ describe('login', () => {
   })
 
   it('conta inativa não entra', async () => {
-    const user = await createUser(app, 'admin')
+    const user = await createUser(app)
     await app.prisma.user.update({ where: { id: user.id }, data: { active: false } })
     expect((await login(app, user.email)).statusCode).toBe(401)
   })
@@ -72,7 +72,7 @@ describe('login', () => {
 
 describe('tokens', () => {
   it('recusa token adulterado, expirado, de outro segredo ou sem algoritmo', async () => {
-    const { user, cookie } = await loggedIn(app, 'admin')
+    const { user, cookie } = await loggedIn(app)
     const access = only(cookie, ACCESS_COOKIE).split('=')[1]!
     const [header, , signature] = access.split('.')
     const { familyId: fam } = await app.prisma.session.findFirstOrThrow({ where: { userId: user.id } })
@@ -95,14 +95,14 @@ describe('tokens', () => {
   })
 
   it('token no cabeçalho Authorization é ignorado: só cookie vale', async () => {
-    const { cookie } = await loggedIn(app, 'admin')
+    const { cookie } = await loggedIn(app)
     const token = only(cookie, ACCESS_COOKIE).split('=')[1]
     const res = await app.inject({ url: '/api/admin/auth/me', headers: { authorization: `Bearer ${token}` } })
     expect(res.statusCode).toBe(401)
   })
 
   it('refresh troca os tokens', async () => {
-    const { cookie } = await loggedIn(app, 'diretoria')
+    const { cookie } = await loggedIn(app)
     const first = await refresh(only(cookie, REFRESH_COOKIE))
     expect(first.statusCode).toBe(200)
     const next = cookieHeader(first)
@@ -111,7 +111,7 @@ describe('tokens', () => {
   })
 
   it('reuso de refresh token revoga a família inteira, inclusive o access token novo', async () => {
-    const { cookie } = await loggedIn(app, 'diretoria')
+    const { cookie } = await loggedIn(app)
     const stolen = only(cookie, REFRESH_COOKIE)
     const legit = cookieHeader(await refresh(stolen))
     expect((await me(legit)).statusCode).toBe(200)
@@ -122,7 +122,7 @@ describe('tokens', () => {
   })
 
   it('logout revoga a sessão na hora', async () => {
-    const { cookie } = await loggedIn(app, 'admin')
+    const { cookie } = await loggedIn(app)
     const out = await app.inject({ method: 'POST', url: '/api/admin/auth/logout', headers: { cookie, origin: ORIGIN } })
     expect(out.statusCode).toBe(204)
     expect((await me(cookie)).statusCode).toBe(401)
@@ -130,9 +130,9 @@ describe('tokens', () => {
   })
 })
 
-describe('CSRF e papéis', () => {
+describe('CSRF e acesso', () => {
   it('rota que muda estado exige Origin permitido e JSON', async () => {
-    const { cookie } = await loggedIn(app, 'admin')
+    const { cookie } = await loggedIn(app)
     const payload = { status: 'concluido' }
     const url = '/api/admin/orders/x'
     const noOrigin = await app.inject({ method: 'PATCH', url, headers: { cookie }, payload })
@@ -150,17 +150,23 @@ describe('CSRF e papéis', () => {
     expect(form.statusCode).toBe(415)
   })
 
-  it('diretoria não acessa contas nem auditoria; sem login dá 401', async () => {
-    const { cookie } = await loggedIn(app, 'diretoria')
-    expect((await app.inject({ url: '/api/admin/users', headers: { cookie } })).statusCode).toBe(403)
-    expect((await app.inject({ url: '/api/admin/audit', headers: { cookie } })).statusCode).toBe(403)
-    expect((await app.inject({ url: '/api/admin/orders', headers: { cookie } })).statusCode).toBe(200)
+  it('toda conta ativa é administradora; sem login dá 401', async () => {
+    const { cookie } = await loggedIn(app)
+    for (const url of ['/api/admin/users', '/api/admin/audit', '/api/admin/orders']) {
+      expect((await app.inject({ url, headers: { cookie } })).statusCode).toBe(200)
+    }
     expect((await app.inject({ url: '/api/admin/orders' })).statusCode).toBe(401)
   })
 
-  it('rebaixar ou desativar vale na hora, sem esperar o token expirar', async () => {
-    const admin = await loggedIn(app, 'admin')
-    const other = await loggedIn(app, 'admin')
+  it('conta antiga com papel "diretoria" no banco continua entrando como administradora', async () => {
+    const legacy = await loggedIn(app)
+    await app.prisma.user.update({ where: { id: legacy.user.id }, data: { role: 'diretoria' } })
+    expect((await app.inject({ url: '/api/admin/users', headers: { cookie: legacy.cookie } })).statusCode).toBe(200)
+  })
+
+  it('desativar vale na hora, sem esperar o token expirar', async () => {
+    const admin = await loggedIn(app)
+    const other = await loggedIn(app)
     const patch = (payload: object) =>
       app.inject({
         method: 'PATCH',
@@ -169,8 +175,6 @@ describe('CSRF e papéis', () => {
         payload,
       })
     expect((await app.inject({ url: '/api/admin/users', headers: { cookie: other.cookie } })).statusCode).toBe(200)
-    expect((await patch({ role: 'diretoria' })).statusCode).toBe(200)
-    expect((await app.inject({ url: '/api/admin/users', headers: { cookie: other.cookie } })).statusCode).toBe(403)
     expect((await patch({ active: false })).statusCode).toBe(200)
     expect((await me(other.cookie)).statusCode).toBe(401)
   })
@@ -183,7 +187,7 @@ describe('CSRF e papéis', () => {
   })
 
   it('URL codificada não escapa da checagem de origem', async () => {
-    const { cookie } = await loggedIn(app, 'admin')
+    const { cookie } = await loggedIn(app)
     for (const url of ['/api/%61dmin/orders/x', '/api/adm%69n/orders/x']) {
       const res = await app.inject({ method: 'PATCH', url, headers: { cookie }, payload: { status: 'concluido' } })
       expect(res.statusCode).toBe(403)
@@ -191,7 +195,7 @@ describe('CSRF e papéis', () => {
   })
 
   it('tentativas erradas em paralelo são todas contadas e bloqueiam a conta', async () => {
-    const user = await createUser(app, 'diretoria')
+    const user = await createUser(app)
     await Promise.all(Array.from({ length: 8 }, () => login(app, user.email, 'senha-errada-qualquer')))
     const saved = await app.prisma.user.findUniqueOrThrow({ where: { id: user.id } })
     // Com a conta já bloqueada, as últimas tentativas são recusadas sem contar; sem o incremento atômico ficaria em 1.

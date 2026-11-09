@@ -22,7 +22,7 @@ export function LoginPage({ reason }: { reason?: string | undefined }) {
       <div className={styles.loginBox}>
         <img src="/img/logo.png" alt="" width="64" height="64" />
         <h1>Painel da AAGB</h1>
-        <p>Área da diretoria e da administração da associação.</p>
+        <p>Área de administração do site da associação.</p>
         <form onSubmit={form.handleSubmit((data) => login(data.email, data.password))} noValidate>
           {reason && !form.formError && <FormError>{reason}</FormError>}
           <TextField label="E-mail" type="email" autoComplete="username" {...form.field('email')} />

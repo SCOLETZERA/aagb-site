@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { notFound } from '../../lib/errors.js'
-import { adminOf, requireRole } from '../../plugins/auth.js'
+import { adminOf, requireAdmin } from '../../plugins/auth.js'
 import { audit } from '../../services/audit.js'
 import { changeOrderStatus } from '../../services/orders.js'
 import { ANONYMIZED } from '../../services/retention.js'
@@ -19,11 +19,11 @@ const statusBody = z.object({ status: z.enum(INBOX_STATUSES, 'Status inválido.'
 
 /**
  * Caixa de entrada do painel: pedidos, solicitações de serviço e ofertas de doação.
- * É onde a diretoria vê o que chegou (status "novo").
+ * É onde a administração vê o que chegou (status "novo").
  */
 export async function inboxRoutes(app: FastifyInstance) {
   const db = app.prisma
-  app.addHook('preHandler', requireRole('admin', 'diretoria'))
+  app.addHook('preHandler', requireAdmin())
 
   const page = (query: unknown) => {
     const { status, page } = listQuery.parse(query)

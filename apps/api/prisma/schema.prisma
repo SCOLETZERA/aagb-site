@@ -188,7 +188,7 @@ model User {
   email        String     @unique
   name         String
   passwordHash String
-  role         String // "admin" | "diretoria"
+  role         String // sempre "admin": o papel não é mais consultado (contas antigas podem ter "diretoria")
   active       Boolean    @default(true)
   failedLogins Int        @default(0)
   lockedUntil  DateTime?

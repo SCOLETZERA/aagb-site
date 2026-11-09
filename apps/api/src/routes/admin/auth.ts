@@ -2,7 +2,7 @@ import type { User } from '@prisma/client'
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { AppError } from '../../lib/errors.js'
-import { REFRESH_COOKIE, adminOf, clearAuthCookies, requireRole, setAuthCookies } from '../../plugins/auth.js'
+import { REFRESH_COOKIE, adminOf, clearAuthCookies, requireAdmin, setAuthCookies } from '../../plugins/auth.js'
 import { audit } from '../../services/audit.js'
 
 const loginBody = z.object({
@@ -10,7 +10,7 @@ const loginBody = z.object({
   password: z.string().max(200),
 })
 
-const publicUser = (u: Pick<User, 'id' | 'email' | 'name' | 'role'>) => ({ id: u.id, email: u.email, name: u.name, role: u.role })
+const publicUser = (u: Pick<User, 'id' | 'email' | 'name'>) => ({ id: u.id, email: u.email, name: u.name })
 
 /** Login, renovação e saída do painel. */
 export async function adminAuthRoutes(app: FastifyInstance) {
@@ -56,5 +56,5 @@ export async function adminAuthRoutes(app: FastifyInstance) {
     return reply.status(204).send()
   })
 
-  app.get('/me', { preHandler: requireRole('admin', 'diretoria') }, async (req) => ({ user: publicUser(adminOf(req)) }))
+  app.get('/me', { preHandler: requireAdmin() }, async (req) => ({ user: publicUser(adminOf(req)) }))
 }
