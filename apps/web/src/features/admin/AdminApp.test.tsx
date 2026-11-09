@@ -9,7 +9,7 @@ import type { AdminUser } from './types'
 const json = (status: number, body?: unknown) =>
   new Response(body === undefined ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
-const board: AdminUser = { id: 'u1', email: 'ana@aagb.test', name: 'Ana Souza', role: 'diretoria' }
+const board: AdminUser = { id: 'u1', email: 'ana@aagb.test', name: 'Ana Souza' }
 const summary = {
   orders: [{ status: 'novo', count: 3, totalCents: 5400 }],
   serviceRequests: [{ status: 'novo', count: 1 }],
@@ -79,17 +79,8 @@ describe('painel administrativo', () => {
     expect(screen.getByRole('cell', { name: 'Mel puro 500 g' })).toBeInTheDocument()
   })
 
-  it('diretoria não vê contas nem auditoria no menu', async () => {
+  it('quem entra vê o menu completo, com contas e auditoria', async () => {
     fakeApi(board)
-    renderAdmin()
-    const nav = await screen.findByRole('navigation', { name: 'Painel' })
-    expect(within(nav).getByRole('link', { name: 'Pedidos' })).toBeInTheDocument()
-    expect(within(nav).queryByRole('link', { name: 'Contas' })).not.toBeInTheDocument()
-    expect(within(nav).queryByRole('link', { name: 'Auditoria' })).not.toBeInTheDocument()
-  })
-
-  it('administração vê contas e auditoria', async () => {
-    fakeApi({ ...board, role: 'admin' })
     renderAdmin()
     const nav = await screen.findByRole('navigation', { name: 'Painel' })
     expect(within(nav).getByRole('link', { name: 'Contas' })).toBeInTheDocument()

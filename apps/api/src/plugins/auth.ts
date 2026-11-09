@@ -4,14 +4,10 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import type { Config } from '../config.js'
 import { AppError } from '../lib/errors.js'
 
-export const ROLES = ['admin', 'diretoria'] as const
-export type Role = (typeof ROLES)[number]
-
 export interface AdminUser {
   id: string
   email: string
   name: string
-  role: Role
 }
 
 declare module '@fastify/jwt' {
@@ -24,7 +20,7 @@ declare module '@fastify/jwt' {
 
 declare module 'fastify' {
   interface FastifyRequest {
-    /** Usuário do painel, preenchido por `requireRole`. */
+    /** Usuário do painel, preenchido por `requireAdmin`. */
     admin?: AdminUser
   }
 }
@@ -60,10 +56,10 @@ export function clearAuthCookies(reply: FastifyReply, config: Config) {
 }
 
 /**
- * Exige login e um dos papéis. Usuário e sessão são relidos do banco a cada requisição, então
- * desativar alguém, trocar o papel ou sair vale na hora, sem esperar o token expirar.
+ * Exige login. Toda conta ativa do painel é administradora. Usuário e sessão são relidos do banco
+ * a cada requisição, então desativar alguém ou sair vale na hora, sem esperar o token expirar.
  */
-export function requireRole(...roles: Role[]) {
+export function requireAdmin() {
   return async function (this: FastifyInstance, request: FastifyRequest) {
     try {
       await request.jwtVerify({ onlyCookie: true })
@@ -76,12 +72,11 @@ export function requireRole(...roles: Role[]) {
       this.prisma.session.findFirst({ where: { userId: sub, familyId: fam, revokedAt: null, expiresAt: { gt: new Date() } } }),
     ])
     if (!user || !user.active || !session) throw new AppError(401, 'Sua sessão expirou. Entre de novo.')
-    if (!roles.includes(user.role as Role)) throw new AppError(403, 'Você não tem permissão para isso.')
-    request.admin = { id: user.id, email: user.email, name: user.name, role: user.role as Role }
+    request.admin = { id: user.id, email: user.email, name: user.name }
   }
 }
 
-/** Para uso nos handlers depois de `requireRole`. */
+/** Para uso nos handlers depois de `requireAdmin`. */
 export function adminOf(request: FastifyRequest): AdminUser {
   if (!request.admin) throw new AppError(401, 'Faça login para continuar.')
   return request.admin

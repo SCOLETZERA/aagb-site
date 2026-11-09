@@ -1,20 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
-import { FormError, SelectField, TextField } from '@/components/ui/Field'
+import { FormError, TextField } from '@/components/ui/Field'
 import { ResourceState } from '@/components/ui/States'
 import { useToast } from '@/features/toast/ToastContext'
 import { ApiError } from '@/services/api'
 import { useAdminAuth, useAdminUser } from '../AdminAuth'
 import { formatDateTime } from '../format'
-import type { Account, Role } from '../types'
+import type { Account } from '../types'
 import { AdminHeader, useAdminResource } from '../ui'
 import styles from '../admin.module.css'
-
-const ROLE_OPTIONS = [
-  { value: 'diretoria', label: 'Diretoria: pedidos, conteúdo e documentos' },
-  { value: 'admin', label: 'Administração: tudo, inclusive contas' },
-]
 
 type Dialog = { kind: 'new' } | { kind: 'password'; account: Account } | null
 
@@ -25,7 +20,7 @@ export function AccountsPage() {
   const accounts = useAdminResource<Account[]>('/admin/users')
   const [dialog, setDialog] = useState<Dialog>(null)
 
-  async function update(account: Account, body: Partial<Pick<Account, 'role' | 'active'>>, done: string) {
+  async function update(account: Account, body: { active: boolean }, done: string) {
     try {
       await client.request(`/admin/users/${account.id}`, { method: 'PATCH', body })
       toast.show(done)
@@ -39,7 +34,7 @@ export function AccountsPage() {
     <>
       <AdminHeader
         title="Contas do painel"
-        description="Quem pode entrar no painel. Desativar ou trocar o papel vale na hora."
+        description="Quem pode entrar no painel. Todas as contas podem fazer tudo. Desativar vale na hora."
         actions={<Button onClick={() => setDialog({ kind: 'new' })}>Nova conta</Button>}
       />
       {accounts.loading || accounts.error ? (
@@ -48,7 +43,6 @@ export function AccountsPage() {
         <ul className={styles.items}>
           {accounts.data!.map((a) => {
             const self = a.id === me.id
-            const roleId = `role-${a.id}`
             return (
               <li key={a.id} className={styles.item}>
                 <div className={styles.itemHead}>
@@ -61,16 +55,6 @@ export function AccountsPage() {
                 </div>
                 <p className={styles.muted}>Criada em {formatDateTime(a.createdAt)}</p>
                 <div className={styles.actions}>
-                  <label htmlFor={roleId}>Papel</label>
-                  <select
-                    id={roleId}
-                    value={a.role}
-                    disabled={self}
-                    onChange={(e) => void update(a, { role: e.target.value as Role }, 'Papel alterado.')}
-                  >
-                    <option value="diretoria">Diretoria</option>
-                    <option value="admin">Administração</option>
-                  </select>
                   <button type="button" className={styles.linkButton} onClick={() => setDialog({ kind: 'password', account: a })}>
                     Trocar senha<span className="visually-hidden"> de {a.name}</span>
                   </button>
@@ -146,7 +130,7 @@ function useSubmit(run: () => Promise<void>) {
 
 function NewAccountForm({ onDone }: { onDone(): void }) {
   const { client } = useAdminAuth()
-  const [values, setValues] = useState({ name: '', email: '', role: 'diretoria', password: '' })
+  const [values, setValues] = useState({ name: '', email: '', password: '' })
   const form = useSubmit(async () => {
     await client.request('/admin/users', { method: 'POST', body: values })
     onDone()
@@ -161,7 +145,6 @@ function NewAccountForm({ onDone }: { onDone(): void }) {
     <form onSubmit={form.submit} noValidate>
       <TextField label="Nome" autoComplete="off" {...bind('name')} />
       <TextField label="E-mail" type="email" autoComplete="off" {...bind('email')} />
-      <SelectField label="Papel" options={ROLE_OPTIONS} {...bind('role')} />
       <TextField label="Senha inicial" type="password" autoComplete="new-password" hint={PASSWORD_HINT} {...bind('password')} />
       {form.formError && <FormError>{form.formError}</FormError>}
       <Button type="submit" size="lg" fullWidth disabled={form.busy}>

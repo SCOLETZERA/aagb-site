@@ -1,6 +1,6 @@
 /**
  * Cria (ou redefine a senha de) uma conta do painel. Uso:
- *   npm run user:create -w apps/api -- --email pessoa@exemplo.org --name "Nome" --role admin
+ *   npm run user:create -w apps/api -- --email pessoa@exemplo.org --name "Nome"
  * A senha é pedida no terminal e não aparece na tela nem no histórico.
  */
 import 'dotenv/config'
@@ -10,14 +10,13 @@ import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcrypt'
 import { z } from 'zod'
 import { loadConfig } from '../src/config.js'
-import { ROLES } from '../src/plugins/auth.js'
 import { passwordSchema } from '../src/routes/admin/users.js'
 
 const { values } = parseArgs({
-  options: { email: { type: 'string' }, name: { type: 'string' }, role: { type: 'string', default: 'admin' } },
+  options: { email: { type: 'string' }, name: { type: 'string' } },
 })
 const args = z
-  .object({ email: z.email().trim().toLowerCase(), name: z.string().trim().min(3), role: z.enum(ROLES) })
+  .object({ email: z.email().trim().toLowerCase(), name: z.string().trim().min(3) })
   .parse(values)
 
 function askHidden(question: string): Promise<string> {
@@ -43,11 +42,11 @@ const prisma = new PrismaClient({ datasourceUrl: config.DATABASE_URL })
 const passwordHash = await bcrypt.hash(password, config.BCRYPT_COST)
 const user = await prisma.user.upsert({
   where: { email: args.email },
-  create: { ...args, passwordHash },
-  update: { name: args.name, role: args.role, passwordHash, active: true, failedLogins: 0, lockedUntil: null },
+  create: { ...args, role: 'admin', passwordHash },
+  update: { name: args.name, role: 'admin', passwordHash, active: true, failedLogins: 0, lockedUntil: null },
 })
 // Senha nova encerra as sessões abertas.
 await prisma.session.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } })
 await prisma.auditLog.create({ data: { userId: null, action: 'users.cli-upsert', target: `user:${user.id}` } })
 await prisma.$disconnect()
-console.log(`Conta pronta: ${user.email} (${user.role}).`)
+console.log(`Conta pronta: ${user.email}.`)

@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { AppError, notFound } from '../../lib/errors.js'
-import { ROLES, adminOf, requireRole } from '../../plugins/auth.js'
+import { adminOf, requireAdmin } from '../../plugins/auth.js'
 import { audit } from '../../services/audit.js'
 import { idParams } from '../public.js'
 
@@ -15,18 +15,18 @@ export const passwordSchema = z
 const email = z.email('E-mail inválido.').trim().toLowerCase().max(254)
 const name = z.string().trim().min(3, 'Informe o nome.').max(120)
 
-const createBody = z.object({ email, name, role: z.enum(ROLES), password: passwordSchema })
+const createBody = z.object({ email, name, password: passwordSchema })
 const updateBody = z
-  .object({ name: name.optional(), role: z.enum(ROLES).optional(), active: z.boolean().optional() })
+  .object({ name: name.optional(), active: z.boolean().optional() })
   .refine((v) => Object.keys(v).length > 0, 'Nada para alterar.')
 const passwordBody = z.object({ password: passwordSchema })
 
-const select = { id: true, email: true, name: true, role: true, active: true, createdAt: true } as const
+const select = { id: true, email: true, name: true, active: true, createdAt: true } as const
 
-/** Contas do painel. Só administradores. */
+/** Contas do painel. */
 export async function userRoutes(app: FastifyInstance) {
   const db = app.prisma
-  app.addHook('preHandler', requireRole('admin'))
+  app.addHook('preHandler', requireAdmin())
 
   app.get('/users', async () => db.user.findMany({ select, orderBy: { createdAt: 'asc' } }))
 
@@ -34,7 +34,7 @@ export async function userRoutes(app: FastifyInstance) {
     const input = createBody.parse(req.body)
     try {
       const user = await db.user.create({
-        data: { email: input.email, name: input.name, role: input.role, passwordHash: await app.authService.hashPassword(input.password) },
+        data: { email: input.email, name: input.name, role: 'admin', passwordHash: await app.authService.hashPassword(input.password) },
         select,
       })
       await audit(db, adminOf(req).id, 'users.create', `user:${user.id}`)
@@ -52,8 +52,8 @@ export async function userRoutes(app: FastifyInstance) {
     const input = updateBody.parse(req.body)
     const me = adminOf(req)
     // Evita que o painel fique sem ninguém capaz de administrar.
-    if (id === me.id && (input.active === false || (input.role && input.role !== 'admin'))) {
-      throw new AppError(409, 'Você não pode tirar o próprio acesso de administrador.')
+    if (id === me.id && input.active === false) {
+      throw new AppError(409, 'Você não pode desativar a própria conta.')
     }
     const exists = await db.user.findUnique({ where: { id } })
     if (!exists) throw notFound('Usuário não encontrado.')

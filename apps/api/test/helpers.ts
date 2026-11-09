@@ -5,7 +5,6 @@ import type { FastifyInstance, LightMyRequestResponse } from 'fastify'
 import { afterAll } from 'vitest'
 import { buildApp } from '../src/app.js'
 import { loadConfig } from '../src/config.js'
-import type { Role } from '../src/plugins/auth.js'
 import { TEMPLATE_DB, TMP_DIR } from './paths.js'
 
 export const ORIGIN = 'http://localhost:5173'
@@ -38,9 +37,9 @@ export async function makeApp(env: Record<string, string> = {}, before?: (app: F
   return app
 }
 
-export async function createUser(app: FastifyInstance, role: Role, email = `${role}-${randomUUID()}@aagb.test`) {
+export async function createUser(app: FastifyInstance, email = `pessoa-${randomUUID()}@aagb.test`) {
   return app.prisma.user.create({
-    data: { email, name: `Pessoa ${role}`, role, passwordHash: await app.authService.hashPassword(PASSWORD) },
+    data: { email, name: 'Pessoa de teste', role: 'admin', passwordHash: await app.authService.hashPassword(PASSWORD) },
   })
 }
 
@@ -54,8 +53,8 @@ export async function login(app: FastifyInstance, email: string, password = PASS
 }
 
 /** Usuário logado: devolve o cabeçalho Cookie pronto. */
-export async function loggedIn(app: FastifyInstance, role: Role) {
-  const user = await createUser(app, role)
+export async function loggedIn(app: FastifyInstance) {
+  const user = await createUser(app)
   const res = await login(app, user.email)
   if (res.statusCode !== 200) throw new Error(`login falhou: ${res.body}`)
   return { user, cookie: cookieHeader(res) }

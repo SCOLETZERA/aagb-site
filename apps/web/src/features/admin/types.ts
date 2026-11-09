@@ -1,12 +1,9 @@
 /** Formatos devolvidos pelas rotas do painel (`/api/admin`). Datas completas vêm em ISO 8601. */
 
-export type Role = 'admin' | 'diretoria'
-
 export interface AdminUser {
   id: string
   email: string
   name: string
-  role: Role
 }
 
 export const INBOX_STATUSES = ['novo', 'em-andamento', 'concluido', 'cancelado'] as const

@@ -14,7 +14,6 @@ const AccountsPage = lazy(() => import('./pages/AccountsPage').then((m) => ({ de
 const AuditPage = lazy(() => import('./pages/AuditPage').then((m) => ({ default: m.AuditPage })))
 
 const PENDING = { loading: true, error: null, reload: () => undefined }
-const ROLE_LABEL = { admin: 'Administração', diretoria: 'Diretoria' } as const
 
 /** Painel administrativo em /admin. Fica fora do layout público e só funciona com a API real. */
 export function AdminApp({ apiUrl = import.meta.env.VITE_API_URL }: { apiUrl?: string | undefined }) {
@@ -50,16 +49,12 @@ function Gate() {
         <Route path="doacoes" element={<InboxPage kind="donation-offers" />} />
         <Route path="conteudo/:type" element={<ContentPage />} />
         <Route path="documentos" element={<DocumentsPage />} />
-        <Route path="contas" element={<OnlyAdmin><AccountsPage /></OnlyAdmin>} />
-        <Route path="auditoria" element={<OnlyAdmin><AuditPage /></OnlyAdmin>} />
+        <Route path="contas" element={<AccountsPage />} />
+        <Route path="auditoria" element={<AuditPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>
   )
-}
-
-function OnlyAdmin({ children }: { children: ReactNode }) {
-  return useAdminUser().role === 'admin' ? children : <Navigate to="/admin" replace />
 }
 
 function Shell() {
@@ -82,10 +77,7 @@ function Shell() {
               AAGB <small>Painel</small>
             </span>
           </Link>
-          <p className={styles.who}>
-            {user.name}
-            <span>{ROLE_LABEL[user.role]}</span>
-          </p>
+          <p className={styles.who}>{user.name}</p>
           <button type="button" className={styles.topButton} onClick={() => void logout()}>
             Sair
           </button>
@@ -106,13 +98,9 @@ function Shell() {
               </NavItem>
             ))}
             <NavItem to="/admin/documentos">Documentos</NavItem>
-            {user.role === 'admin' && (
-              <>
-                <li className={styles.navGroup} aria-hidden="true">Administração</li>
-                <NavItem to="/admin/contas">Contas</NavItem>
-                <NavItem to="/admin/auditoria">Auditoria</NavItem>
-              </>
-            )}
+            <li className={styles.navGroup} aria-hidden="true">Administração</li>
+            <NavItem to="/admin/contas">Contas</NavItem>
+            <NavItem to="/admin/auditoria">Auditoria</NavItem>
             <li className={styles.navGroup} aria-hidden="true">Site público</li>
             <NavItem to="/">Voltar ao site</NavItem>
           </ul>

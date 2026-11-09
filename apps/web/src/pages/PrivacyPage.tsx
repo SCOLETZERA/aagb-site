@@ -52,7 +52,7 @@ export function PrivacyPage() {
         <section>
           <h2>Quem vê os dados</h2>
           <p>
-            Só a diretoria e os administradores da associação, com login e senha. Cada entrada no painel e cada alteração ficam
+            Só as pessoas da associação responsáveis pelo painel, com login e senha. Cada entrada no painel e cada alteração ficam
             registradas. Não vendemos nem repassamos seus dados a ninguém.
           </p>
         </section>

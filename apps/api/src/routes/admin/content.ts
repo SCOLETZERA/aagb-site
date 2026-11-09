@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { AppError, notFound } from '../../lib/errors.js'
 import { toArticle, toDonation, toNeed, toPartner, toProduct, toProject, toService } from '../../lib/mappers.js'
-import { adminOf, requireRole } from '../../plugins/auth.js'
+import { adminOf, requireAdmin } from '../../plugins/auth.js'
 import { audit } from '../../services/audit.js'
 import { idParams } from '../public.js'
 
@@ -98,7 +98,7 @@ const toData = (input: Record<string, unknown>) =>
 /** CRUD do conteúdo público. Diretoria e administradores podem editar. */
 export async function contentRoutes(app: FastifyInstance) {
   const db = app.prisma
-  app.addHook('preHandler', requireRole('admin', 'diretoria'))
+  app.addHook('preHandler', requireAdmin())
 
   const resources: Record<Path, Resource<unknown>> = {
     news: resource(db.article, toArticle),

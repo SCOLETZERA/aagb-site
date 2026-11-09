@@ -10,7 +10,7 @@ npm install                                  # também gera o client do Prisma
 cp apps/api/.env.example apps/api/.env       # preencha JWT_SECRET
 npm run db:push -w apps/api                  # cria as tabelas
 npm run db:seed -w apps/api                  # dados de exemplo (não são dados reais); com SEED_ADMIN_* no .env, cria uma conta de teste do painel
-npm run user:create -w apps/api -- --email voce@exemplo.org --name "Seu Nome" --role admin
+npm run user:create -w apps/api -- --email voce@exemplo.org --name "Seu Nome"
 npm run dev:api                              # http://localhost:3333
 ```
 
@@ -36,14 +36,18 @@ Públicas (sem login):
 
 Painel (`/api/admin`, cookie de sessão):
 
-| Rota | Papéis |
-| --- | --- |
-| `POST auth/login`, `POST auth/refresh`, `POST auth/logout`, `GET auth/me` | todos |
-| `GET/PATCH orders`, `service-requests`, `donation-offers` (+ `POST :id/anonymize`) | admin, diretoria |
-| `GET/POST/PUT/DELETE content/{news,projects,partners,products,services,needs,donations}` | admin, diretoria |
-| `POST documents` (multipart: `title`, `category`, `publishedAt` e depois `file`), `DELETE documents/:id` | admin, diretoria |
-| `GET reports/summary` | admin, diretoria |
-| `GET/POST/PATCH users`, `PUT users/:id/password`, `GET audit` | admin |
+Todas as contas do painel são administradoras: quem entra faz tudo, sem separação de papéis. Cada rota abaixo só exige login.
+
+| Rota |
+| --- |
+| `POST auth/login`, `POST auth/refresh`, `POST auth/logout`, `GET auth/me` |
+| `GET/PATCH orders`, `service-requests`, `donation-offers` (+ `POST :id/anonymize`) |
+| `GET/POST/PUT/DELETE content/{news,projects,partners,products,services,needs,donations}` |
+| `POST documents` (multipart: `title`, `category`, `publishedAt` e depois `file`), `DELETE documents/:id` |
+| `GET reports/summary`, `GET audit` |
+| `GET/POST/PATCH users`, `PUT users/:id/password` |
+
+Contas antigas que ainda tenham o papel "diretoria" no banco entram como administradoras; o campo `role` não é mais consultado.
 
 Erros: `{ "message": "texto em português", "fields"?: { "campo": "erro" } }` com o status HTTP adequado.
 

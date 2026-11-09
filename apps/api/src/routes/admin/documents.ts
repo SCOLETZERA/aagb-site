@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { AppError, notFound } from '../../lib/errors.js'
 import { toDocument } from '../../lib/mappers.js'
-import { adminOf, requireRole } from '../../plugins/auth.js'
+import { adminOf, requireAdmin } from '../../plugins/auth.js'
 import { audit } from '../../services/audit.js'
 import { MAX_DOCUMENT_BYTES, isPdf } from '../../services/documents.js'
 import { idParams } from '../public.js'
@@ -26,7 +26,7 @@ export async function adminDocumentRoutes(app: FastifyInstance) {
   await app.register(multipart, {
     limits: { fileSize: MAX_DOCUMENT_BYTES, files: 1, fields: 5, fieldSize: 1000, parts: 6, headerPairs: 50 },
   })
-  app.addHook('preHandler', requireRole('admin', 'diretoria'))
+  app.addHook('preHandler', requireAdmin())
 
   app.post('/documents', async (req, reply) => {
     if (!req.isMultipart()) throw new AppError(415, 'Envie o documento como formulário com arquivo.')
