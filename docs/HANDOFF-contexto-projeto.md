@@ -29,7 +29,7 @@ Partes:
 npm install                      # também gera o client do Prisma
 npm run lint                     # API + web
 npm run typecheck                # shared + API + web
-npm test                         # API (85 testes, num Postgres temporário) + web (52 testes)
+npm test                         # API (92 testes, num Postgres temporário) + web (52 testes)
 npm run build                    # API (esbuild) + web (Vite)
 ```
 
@@ -121,7 +121,10 @@ apps/web/src/
 **Banco e Supabase** (`prisma/schema.prisma`, `prisma/migrations`, `src/config.ts`, `docs/supabase.md`)
 - Postgres com migrações. As tabelas ficam no esquema `aagb`, nunca no `public`, que a Data API do Supabase pode expor com a chave pública.
 - A migração inicial recusa o `public` quando existe o papel `anon`, tira de `anon`/`authenticated` o acesso ao esquema e às tabelas, e liga RLS sem políticas em todas as tabelas. A API conecta como dona das tabelas e não é afetada.
-- Em produção, `config.ts` exige `schema=` próprio e `sslmode=require` no `DATABASE_URL`.
+- Em produção, `config.ts` exige em `DATABASE_URL` e `DIRECT_URL`: `schema=` próprio, `sslmode=require` exato (o Prisma 6 trata `verify-full` como `prefer`) e nenhum parâmetro repetido (o Prisma usa o último).
+- `db:reset`, `db:seed` e `db:migrate:dev` passam por `scripts/local-only.ts` e só rodam contra `localhost`/`127.0.0.1`. O próprio Prisma também recusa `migrate reset` quando chamado por um assistente de IA, sem consentimento explícito.
+- O caractere nulo (U+0000) num corpo JSON é recusado com 400 (`plugins/security.ts`); o Postgres não o aceita em texto.
+- Migração nova que cria tabela: acrescente `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` (o esquema já é fechado, mas o RLS é a segunda barreira).
 - `test/supabase.test.ts` imita o pior caso do Supabase (papéis públicos com acesso padrão a tudo) e confere que eles não leem nem alteram nada.
 
 **LGPD** (`services/retention.ts`, `server.ts`)

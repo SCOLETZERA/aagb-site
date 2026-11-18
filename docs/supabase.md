@@ -11,7 +11,8 @@ O Supabase tem uma "Data API" que pode expor tabelas do esquema `public` para qu
 1. **Esquema próprio.** As tabelas ficam no esquema `aagb`, indicado por `schema=aagb` no endereço de conexão, nunca no `public`.
 2. **A migração recusa o `public`.** Se alguém tentar criar as tabelas no `public` de um banco do Supabase, a primeira migração para com erro.
 3. **A migração fecha o esquema.** Ela tira dos papéis públicos do Supabase (`anon` e `authenticated`) o acesso ao esquema e às tabelas, e liga RLS em todas as tabelas, sem nenhuma política de acesso. A API, dona das tabelas, não é afetada.
-4. **A API confere o endereço ao iniciar.** Em produção, ela não sobe sem `schema=` próprio e sem `sslmode=require` (conexão criptografada).
+4. **A API confere o endereço ao iniciar.** Em produção, ela não sobe sem `schema=` próprio, sem `sslmode=require` (conexão criptografada) ou com parâmetros repetidos no endereço.
+   - O valor precisa ser exatamente `require`. O Prisma 6 trata `verify-ca`, `verify-full` e variações de maiúsculas como `prefer`, que aceita conexão sem criptografia.
 
 Os testes automáticos (`apps/api/test/supabase.test.ts`) imitam o pior caso do Supabase, com os papéis públicos recebendo acesso a tudo que é criado, e conferem que mesmo assim eles não leem nem alteram nada.
 
@@ -30,23 +31,32 @@ No botão **Connect** do projeto, copie:
 - **Transaction pooler** (porta 6543): vai em `DATABASE_URL`, que a API usa. Acrescente `?pgbouncer=true&schema=aagb&sslmode=require`.
 - **Session pooler** (porta 5432): vai em `DIRECT_URL`, usada só pelas migrações. Acrescente `?schema=aagb&sslmode=require`.
 
-Exemplo (troque `PROJETO`, `SENHA` e a região):
+Copie os endereços **exatamente** como aparecem no Connect: o começo do endereço do servidor (`aws-0-…`, `aws-1-…`) e a região variam de projeto para projeto. Só acrescente os parâmetros. Exemplo de como fica:
 
 ```
 DATABASE_URL=postgresql://postgres.PROJETO:SENHA@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&schema=aagb&sslmode=require
 DIRECT_URL=postgresql://postgres.PROJETO:SENHA@aws-0-sa-east-1.pooler.supabase.com:5432/postgres?schema=aagb&sslmode=require
 ```
 
-Esses valores vão nas variáveis de ambiente do serviço que hospeda a API, **nunca no Git**. Se a senha tiver caracteres especiais (`@`, `#`, `/`…), ela precisa ser codificada no endereço (ex.: `@` vira `%40`).
+Esses valores vão nas variáveis de ambiente do serviço que hospeda a API, **nunca no Git** e **nunca no `apps/api/.env`** de quem desenvolve. Esse arquivo é do banco local. Se a senha tiver caracteres especiais (`@`, `#`, `/`…), ela precisa ser codificada no endereço (ex.: `@` vira `%40`).
 
 ### 4. Criar as tabelas
-De um computador com o projeto e as duas variáveis acima configuradas:
+O ideal é o serviço de hospedagem rodar `npm run db:migrate -w apps/api` a cada publicação, antes de iniciar a API.
 
-```bash
+Para rodar à mão, de um computador com o projeto, passe os endereços só para aquele comando, sem gravá-los no `.env`. No PowerShell:
+
+```powershell
+$env:DATABASE_URL = "<Transaction pooler com os parâmetros>"
+$env:DIRECT_URL = "<Session pooler com os parâmetros>"
 npm run db:migrate -w apps/api
+Remove-Item Env:DATABASE_URL, Env:DIRECT_URL
 ```
 
 O comando aplica as migrações de `apps/api/prisma/migrations`. Rodar de novo não repete nada.
+
+`db:reset`, `db:seed` e `db:migrate:dev` apagam ou reescrevem o banco e **se recusam a rodar** se `DATABASE_URL` ou `DIRECT_URL` não apontarem para o Postgres local.
+
+Se a migração parar com "Use um esquema próprio" mesmo com `schema=aagb` no endereço, o pooler pode não ter repassado o esquema. Nesse caso, use em `DIRECT_URL` a "Direct connection" do Connect, com os mesmos parâmetros. Ela exige rede IPv6 ou o complemento IPv4 do Supabase.
 
 ### 5. Criar a primeira conta do painel
 
@@ -57,12 +67,18 @@ npm run user:create -w apps/api -- --email voce@exemplo.org --name "Seu Nome"
 **Não rode `db:seed` em produção.** Ele grava os dados de exemplo, que não são dados reais da associação.
 
 ### 6. Conferir
-- No painel do Supabase, abra o **Security Advisor**: não deve haver alerta sobre tabelas expostas ou sem RLS.
+- No painel do Supabase, abra o **Security Advisor**: não deve haver alerta de tabela exposta ou sem RLS. Um aviso informativo de "RLS ligado sem políticas" é esperado; é de propósito, porque só a API acessa as tabelas.
 - Entre no painel da AAGB e faça um pedido de teste pela vitrine.
 
 ## A cada nova versão do código
 
 Rode `npm run db:migrate -w apps/api` **antes** de subir a API nova. Quando o esquema mudar, quem desenvolve cria a migração com `npm run db:migrate:dev -w apps/api`, contra o Postgres local, e a coloca no Git junto com o código.
+
+Toda tabela nova já nasce fechada para os papéis públicos, porque eles não têm acesso ao esquema. Mesmo assim, ao criar uma tabela numa migração, acrescente `ALTER TABLE "<Tabela>" ENABLE ROW LEVEL SECURITY;`, para manter a segunda barreira.
+
+## Desempenho
+
+O pooler de transações acrescenta algumas idas e voltas a cada consulta. Hospede a API na mesma região do banco (São Paulo), para isso não pesar.
 
 ## Plano gratuito: o que saber
 
