@@ -79,6 +79,22 @@ export function requireAdmin() {
   }
 }
 
+/** Por quanto tempo a senha confirmada libera as ações sobre contas. */
+export const CONFIRMATION_TTL_MS = 5 * 60_000
+
+/**
+ * Exige que a senha tenha sido confirmada nesta família de sessões há no máximo 5 minutos.
+ * Assim, uma sessão roubada sozinha não basta para criar contas ou trocar senhas. Usar depois de `requireAdmin`.
+ */
+export function requireRecentConfirmation(now: () => Date = () => new Date()) {
+  return async function (request: FastifyRequest) {
+    const confirmedAt = adminSessionOf(request).confirmedAt
+    if (!confirmedAt || now().getTime() - confirmedAt.getTime() > CONFIRMATION_TTL_MS) {
+      throw new AppError(403, 'Confirme sua senha para continuar.', 'confirm_password')
+    }
+  }
+}
+
 /** Para uso nos handlers depois de `requireAdmin`. */
 export function adminSessionOf(request: FastifyRequest) {
   if (!request.adminSession) throw new AppError(401, 'Faça login para continuar.')

@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { AppError, notFound } from '../../lib/errors.js'
-import { adminOf, requireAdmin } from '../../plugins/auth.js'
+import { adminOf, requireAdmin, requireRecentConfirmation } from '../../plugins/auth.js'
 import { audit } from '../../services/audit.js'
 import { idParams } from '../public.js'
 
@@ -23,14 +23,14 @@ const passwordBody = z.object({ password: passwordSchema })
 
 const select = { id: true, email: true, name: true, active: true, createdAt: true } as const
 
-/** Contas do painel. */
+/** Contas do painel. Criar, alterar e trocar senha exigem senha confirmada há pouco. */
 export async function userRoutes(app: FastifyInstance) {
   const db = app.prisma
   app.addHook('preHandler', requireAdmin())
 
   app.get('/users', async () => db.user.findMany({ select, orderBy: { createdAt: 'asc' } }))
 
-  app.post('/users', async (req, reply) => {
+  app.post('/users', { preHandler: requireRecentConfirmation() }, async (req, reply) => {
     const input = createBody.parse(req.body)
     try {
       const user = await db.user.create({
@@ -47,7 +47,7 @@ export async function userRoutes(app: FastifyInstance) {
     }
   })
 
-  app.patch('/users/:id', async (req) => {
+  app.patch('/users/:id', { preHandler: requireRecentConfirmation() }, async (req) => {
     const { id } = idParams.parse(req.params)
     const input = updateBody.parse(req.body)
     const me = adminOf(req)
@@ -64,7 +64,7 @@ export async function userRoutes(app: FastifyInstance) {
   })
 
   /** Redefine a senha e encerra todas as sessões do usuário. */
-  app.put('/users/:id/password', async (req, reply) => {
+  app.put('/users/:id/password', { preHandler: requireRecentConfirmation() }, async (req, reply) => {
     const { id } = idParams.parse(req.params)
     const { password } = passwordBody.parse(req.body)
     const exists = await db.user.findUnique({ where: { id } })

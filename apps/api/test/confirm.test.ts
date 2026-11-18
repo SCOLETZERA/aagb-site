@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { REFRESH_COOKIE } from '../src/plugins/auth.js'
+import { CONFIRMATION_TTL_MS, REFRESH_COOKIE } from '../src/plugins/auth.js'
 import { MAX_FAILED_LOGINS } from '../src/services/auth.js'
 import { ORIGIN, PASSWORD, cookieHeader, loggedIn, login, makeApp } from './helpers.js'
 
@@ -78,5 +78,60 @@ describe('confirmação de senha', () => {
     expect(sessions).toHaveLength(2)
     expect(sessions.filter((s) => s.confirmedAt !== null)).toHaveLength(1)
     expect((await me(second.cookie)).statusCode).toBe(200)
+  })
+})
+
+describe('ações sobre contas exigem senha confirmada há pouco', () => {
+  type Method = 'POST' | 'PATCH' | 'PUT'
+  const as = (who: { cookie: string }, method: Method, url: string, payload: object) =>
+    app.inject({ method, url, headers: { cookie: who.cookie, origin: ORIGIN }, payload })
+  const setConfirmedAt = (userId: string, confirmedAt: Date) =>
+    app.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { confirmedAt } })
+  const expectConfirmRequired = (res: { statusCode: number; json(): unknown }) => {
+    expect(res.statusCode).toBe(403)
+    expect(res.json()).toEqual({ message: 'Confirme sua senha para continuar.', code: 'confirm_password' })
+  }
+
+  it('sem confirmação, criar, alterar e trocar senha são recusados e nada muda', async () => {
+    const who = await loggedIn(app)
+    const target = await loggedIn(app)
+    const before = await app.prisma.user.findUniqueOrThrow({ where: { id: target.user.id } })
+
+    expectConfirmRequired(await as(who, 'POST', '/api/admin/users', { email: 'sem-confirmar@aagb.test', name: 'Sem Confirmar', password: 'senha-bem-comprida' }))
+    expectConfirmRequired(await as(who, 'PATCH', `/api/admin/users/${target.user.id}`, { name: 'Nome Trocado' }))
+    expectConfirmRequired(await as(who, 'PUT', `/api/admin/users/${target.user.id}/password`, { password: 'outra-senha-bem-forte' }))
+
+    expect(await app.prisma.user.findUnique({ where: { email: 'sem-confirmar@aagb.test' } })).toBeNull()
+    const after = await app.prisma.user.findUniqueOrThrow({ where: { id: target.user.id } })
+    expect(after.name).toBe(before.name)
+    expect(after.passwordHash).toBe(before.passwordHash)
+    expect((await app.inject({ url: '/api/admin/users', headers: { cookie: who.cookie } })).statusCode).toBe(200)
+  })
+
+  it('com confirmação, as três ações funcionam', async () => {
+    const who = await loggedIn(app)
+    const target = await loggedIn(app)
+    await confirmAs(who)
+    expect((await as(who, 'POST', '/api/admin/users', { email: 'confirmada@aagb.test', name: 'Conta Confirmada', password: 'senha-bem-comprida' })).statusCode).toBe(201)
+    expect((await as(who, 'PATCH', `/api/admin/users/${target.user.id}`, { name: 'Nome Trocado' })).statusCode).toBe(200)
+    expect((await as(who, 'PUT', `/api/admin/users/${target.user.id}/password`, { password: 'outra-senha-bem-forte' })).statusCode).toBe(204)
+  })
+
+  it('a confirmação vence depois de 5 minutos', async () => {
+    const who = await loggedIn(app)
+    const target = await loggedIn(app)
+    await setConfirmedAt(who.user.id, new Date(Date.now() - CONFIRMATION_TTL_MS - 1000))
+    expectConfirmRequired(await as(who, 'PATCH', `/api/admin/users/${target.user.id}`, { name: 'Nome Trocado' }))
+    await setConfirmedAt(who.user.id, new Date(Date.now() - 4 * 60_000))
+    expect((await as(who, 'PATCH', `/api/admin/users/${target.user.id}`, { name: 'Nome Trocado' })).statusCode).toBe(200)
+  })
+
+  it('a confirmação de um login não libera outro login da mesma pessoa', async () => {
+    const first = await loggedIn(app)
+    const second = await secondLogin(first)
+    const target = await loggedIn(app)
+    await confirmAs(first)
+    expectConfirmRequired(await as(second, 'PATCH', `/api/admin/users/${target.user.id}`, { name: 'Nome Trocado' }))
+    expect((await as(first, 'PATCH', `/api/admin/users/${target.user.id}`, { name: 'Nome Trocado' })).statusCode).toBe(200)
   })
 })
