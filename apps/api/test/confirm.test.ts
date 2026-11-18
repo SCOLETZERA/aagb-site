@@ -59,15 +59,39 @@ describe('confirmação de senha', () => {
 
   it('a confirmação continua valendo depois da renovação do token', async () => {
     const who = await loggedIn(app)
+    const target = await loggedIn(app)
     await confirmAs(who)
-    const [before] = await activeSessions(who.user.id)
-    expect(before!.confirmedAt).toBeInstanceOf(Date)
     const rt = who.cookie.split('; ').find((c) => c.startsWith(`${REFRESH_COOKIE}=`))!
     const res = await app.inject({ method: 'POST', url: '/api/admin/auth/refresh', headers: { cookie: rt, origin: ORIGIN } })
     expect(res.statusCode).toBe(200)
-    const [after] = await activeSessions(who.user.id)
-    expect(after!.id).not.toBe(before!.id)
-    expect(after!.confirmedAt).toEqual(before!.confirmedAt)
+    const renewed = cookieHeader(res)
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/users/${target.user.id}`,
+      headers: { cookie: renewed, origin: ORIGIN },
+      payload: { name: 'Nome Trocado' },
+    })
+    expect(patch.statusCode).toBe(200)
+  })
+
+  it('confirmar no meio da renovação do token não perde a confirmação', async () => {
+    // Simula a corrida: a renovação já revogou a linha antiga e ainda não criou a nova quando a
+    // confirmação chega. A linha nova nasce sem confirmação; mesmo assim, a família está confirmada.
+    const who = await loggedIn(app)
+    const target = await loggedIn(app)
+    const [old] = await activeSessions(who.user.id)
+    await app.prisma.session.update({ where: { id: old!.id }, data: { revokedAt: new Date() } })
+    await app.authService.confirmPassword(who.user.id, old!.familyId, PASSWORD)
+    await app.prisma.session.create({
+      data: { userId: who.user.id, familyId: old!.familyId, tokenHash: `corrida-${old!.id}`, expiresAt: old!.expiresAt },
+    })
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/admin/users/${target.user.id}`,
+      headers: { cookie: who.cookie, origin: ORIGIN },
+      payload: { name: 'Nome Trocado' },
+    })
+    expect(res.statusCode).toBe(200)
   })
 
   it('a confirmação não vale para outro login da mesma pessoa', async () => {

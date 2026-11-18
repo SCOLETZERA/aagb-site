@@ -26,13 +26,12 @@ export function createAuthService(prisma: PrismaClient, bcryptCost: number) {
   // Hash de comparação para quando o usuário não existe: o tempo de resposta fica igual.
   const dummyHash = bcrypt.hashSync(randomBytes(16).toString('hex'), bcryptCost)
 
-  async function newSession(userId: string, familyId: string = randomUUID(), confirmedAt: Date | null = null) {
+  async function newSession(userId: string, familyId: string = randomUUID()) {
     const refreshToken = randomBytes(32).toString('base64url')
     await prisma.session.create({
       data: {
         userId,
         familyId,
-        confirmedAt,
         tokenHash: hashToken(refreshToken),
         expiresAt: new Date(Date.now() + REFRESH_TTL_SECONDS * 1000),
       },
@@ -89,8 +88,7 @@ export function createAuthService(prisma: PrismaClient, bcryptCost: number) {
       }
       if (session.expiresAt <= now || !session.user.active) throw new AppError(401, 'Sua sessão expirou. Entre de novo.')
 
-      // A confirmação de senha pertence à família: passa para o token novo.
-      return { user: session.user, ...(await newSession(session.userId, session.familyId, session.confirmedAt)) }
+      return { user: session.user, ...(await newSession(session.userId, session.familyId)) }
     },
 
     /**
@@ -106,7 +104,9 @@ export function createAuthService(prisma: PrismaClient, bcryptCost: number) {
         throw new AppError(403, WRONG_PASSWORD)
       }
       await prisma.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null } })
-      await prisma.session.updateMany({ where: { userId, familyId, revokedAt: null }, data: { confirmedAt: now } })
+      // Grava em todas as linhas da família, inclusive as já trocadas: se uma renovação estiver
+      // acontecendo agora, a confirmação não se perde. Quem consulta lê a mais recente da família.
+      await prisma.session.updateMany({ where: { userId, familyId }, data: { confirmedAt: now } })
     },
 
     async logout(token: string | undefined, now = new Date()) {
