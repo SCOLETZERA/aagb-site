@@ -22,6 +22,8 @@ declare module 'fastify' {
   interface FastifyRequest {
     /** Usuário do painel, preenchido por `requireAdmin`. */
     admin?: AdminUser
+    /** Sessão atual do painel, preenchida por `requireAdmin`. */
+    adminSession?: { familyId: string; confirmedAt: Date | null }
   }
 }
 
@@ -73,7 +75,14 @@ export function requireAdmin() {
     ])
     if (!user || !user.active || !session) throw new AppError(401, 'Sua sessão expirou. Entre de novo.')
     request.admin = { id: user.id, email: user.email, name: user.name }
+    request.adminSession = { familyId: session.familyId, confirmedAt: session.confirmedAt }
   }
+}
+
+/** Para uso nos handlers depois de `requireAdmin`. */
+export function adminSessionOf(request: FastifyRequest) {
+  if (!request.adminSession) throw new AppError(401, 'Faça login para continuar.')
+  return request.adminSession
 }
 
 /** Para uso nos handlers depois de `requireAdmin`. */

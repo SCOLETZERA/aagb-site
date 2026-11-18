@@ -11,6 +11,9 @@ const MAX_LOCK_MINUTES = 60
 /** Mesma resposta para usuário inexistente, senha errada, conta inativa ou bloqueada. */
 export const INVALID_LOGIN = 'E-mail ou senha incorretos.'
 
+export const WRONG_PASSWORD = 'Senha incorreta.'
+export const LOCKED = 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'
+
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex')
 
 /** Minutos de bloqueio após `failed` falhas: 1, 2, 4, 8… até 60. */
@@ -23,17 +26,30 @@ export function createAuthService(prisma: PrismaClient, bcryptCost: number) {
   // Hash de comparação para quando o usuário não existe: o tempo de resposta fica igual.
   const dummyHash = bcrypt.hashSync(randomBytes(16).toString('hex'), bcryptCost)
 
-  async function newSession(userId: string, familyId: string = randomUUID()) {
+  async function newSession(userId: string, familyId: string = randomUUID(), confirmedAt: Date | null = null) {
     const refreshToken = randomBytes(32).toString('base64url')
     await prisma.session.create({
       data: {
         userId,
         familyId,
+        confirmedAt,
         tokenHash: hashToken(refreshToken),
         expiresAt: new Date(Date.now() + REFRESH_TTL_SECONDS * 1000),
       },
     })
     return { refreshToken, familyId }
+  }
+
+  /** Conta uma senha errada. Incremento atômico: tentativas em paralelo não podem "perder" falhas e escapar do bloqueio. */
+  async function registerFailure(userId: string, now: Date) {
+    const { failedLogins } = await prisma.user.update({
+      where: { id: userId },
+      data: { failedLogins: { increment: 1 } },
+    })
+    const minutes = lockMinutes(failedLogins)
+    if (minutes) {
+      await prisma.user.update({ where: { id: userId }, data: { lockedUntil: new Date(now.getTime() + minutes * 60_000) } })
+    }
   }
 
   return {
@@ -47,15 +63,7 @@ export function createAuthService(prisma: PrismaClient, bcryptCost: number) {
       if (user.lockedUntil && user.lockedUntil > now) throw new AppError(401, INVALID_LOGIN)
 
       if (!matches) {
-        // Incremento atômico: tentativas em paralelo não podem "perder" falhas e escapar do bloqueio.
-        const { failedLogins } = await prisma.user.update({
-          where: { id: user.id },
-          data: { failedLogins: { increment: 1 } },
-        })
-        const minutes = lockMinutes(failedLogins)
-        if (minutes) {
-          await prisma.user.update({ where: { id: user.id }, data: { lockedUntil: new Date(now.getTime() + minutes * 60_000) } })
-        }
+        await registerFailure(user.id, now)
         throw new AppError(401, INVALID_LOGIN)
       }
 
@@ -81,7 +89,24 @@ export function createAuthService(prisma: PrismaClient, bcryptCost: number) {
       }
       if (session.expiresAt <= now || !session.user.active) throw new AppError(401, 'Sua sessão expirou. Entre de novo.')
 
-      return { user: session.user, ...(await newSession(session.userId, session.familyId)) }
+      // A confirmação de senha pertence à família: passa para o token novo.
+      return { user: session.user, ...(await newSession(session.userId, session.familyId, session.confirmedAt)) }
+    },
+
+    /**
+     * Confirma a senha de quem já está logado e marca a família de sessões como confirmada agora.
+     * Senha errada conta para o mesmo bloqueio do login, para que uma sessão roubada não sirva para
+     * adivinhar a senha. Responde 403 (e não 401) para o painel não tentar renovar a sessão.
+     */
+    async confirmPassword(userId: string, familyId: string, password: string, now = new Date()) {
+      const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
+      if (user.lockedUntil && user.lockedUntil > now) throw new AppError(403, LOCKED)
+      if (!(await bcrypt.compare(password, user.passwordHash))) {
+        await registerFailure(user.id, now)
+        throw new AppError(403, WRONG_PASSWORD)
+      }
+      await prisma.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null } })
+      await prisma.session.updateMany({ where: { userId, familyId, revokedAt: null }, data: { confirmedAt: now } })
     },
 
     async logout(token: string | undefined, now = new Date()) {

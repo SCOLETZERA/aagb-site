@@ -66,3 +66,14 @@ export function rawJwt(payload: object, secret = JWT_SECRET, header: object = { 
   const data = `${enc(header)}.${enc(payload)}`
   return `${data}.${createHmac('sha256', secret).update(data).digest('base64url')}`
 }
+
+/** Confirma a senha na sessão de `who` (ações sobre contas exigem confirmação recente). */
+export async function confirm(app: FastifyInstance, who: { cookie: string }, password = PASSWORD) {
+  const res = await app.inject({
+    method: 'POST',
+    url: '/api/admin/auth/confirm',
+    headers: { cookie: who.cookie, origin: ORIGIN },
+    payload: { password },
+  })
+  if (res.statusCode !== 204) throw new Error(`confirmação falhou: ${res.statusCode} ${res.body}`)
+}
