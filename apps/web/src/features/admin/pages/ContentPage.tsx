@@ -64,11 +64,11 @@ function ContentList({ def }: { def: ContentType }) {
               </div>
               <div className={styles.actions}>
                 <Button variant="secondary" onClick={() => setEditing({ mode: 'edit', item })}>
-                  Editar<span className="visually-hidden"> {String(item[def.titleField])}</span>
+                  Editar <span className="visually-hidden">{String(item[def.titleField])}</span>
                 </Button>
                 {!(def.type === 'products' && item.active === false) && (
                   <button type="button" className={`${styles.linkButton} ${styles.danger}`} onClick={() => void remove(item)}>
-                    Excluir<span className="visually-hidden"> {String(item[def.titleField])}</span>
+                    Excluir <span className="visually-hidden">{String(item[def.titleField])}</span>
                   </button>
                 )}
               </div>

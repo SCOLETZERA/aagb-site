@@ -59,7 +59,7 @@ export function AccountsPage() {
                 <p className={styles.muted}>Criada em {formatDateTime(a.createdAt)}</p>
                 <div className={styles.actions}>
                   <button type="button" className={styles.linkButton} onClick={() => setDialog({ kind: 'password', account: a })}>
-                    Trocar senha<span className="visually-hidden"> de {a.name}</span>
+                    Trocar senha <span className="visually-hidden">de {a.name}</span>
                   </button>
                   {!self && (
                     <button
@@ -71,7 +71,8 @@ export function AccountsPage() {
                       }}
                     >
                       {a.active ? 'Desativar' : 'Reativar'}
-                      <span className="visually-hidden"> {a.name}</span>
+                      {' '}
+                      <span className="visually-hidden">{a.name}</span>
                     </button>
                   )}
                 </div>

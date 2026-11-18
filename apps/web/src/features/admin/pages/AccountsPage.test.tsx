@@ -75,7 +75,7 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     const fetchMock = fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: 'Desativar João Lima' }, { timeout: 3000 }))
 
     const dialog = await confirmDialog()
     await user.type(within(dialog).getByLabelText('Sua senha'), 'senha-certa-123')
@@ -90,7 +90,7 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     const fetchMock = fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: 'Desativar João Lima' }, { timeout: 3000 }))
 
     const dialog = await confirmDialog()
     await user.type(within(dialog).getByLabelText('Sua senha'), 'senha-errada')
@@ -101,11 +101,18 @@ describe('contas: confirmação de senha', () => {
     expect(calls(fetchMock, '/admin/auth/refresh', 'POST')).toBe(0)
   })
 
+  it('os botões de cada conta dizem o nome da pessoa ao leitor de tela', async () => {
+    fakeApi()
+    renderAccounts()
+    expect(await screen.findByRole('button', { name: 'Desativar João Lima' }, { timeout: 3000 })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Trocar senha de João Lima' })).toBeInTheDocument()
+  })
+
   it('fechar a janela cancela a ação e avisa', async () => {
     const user = userEvent.setup()
     const fetchMock = fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: 'Desativar João Lima' }, { timeout: 3000 }))
 
     const dialog = await confirmDialog()
     await user.click(within(dialog).getByRole('button', { name: 'Fechar' }))
@@ -118,13 +125,13 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: 'Desativar João Lima' }, { timeout: 3000 }))
     const dialog = await confirmDialog()
     await user.type(within(dialog).getByLabelText('Sua senha'), 'senha-certa-123')
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar' }))
     expect(await screen.findByText('Conta desativada.')).toBeInTheDocument()
 
-    await user.click(await screen.findByRole('button', { name: /reativar\s*joão lima/i }))
+    await user.click(await screen.findByRole('button', { name: 'Reativar João Lima' }))
     expect(await screen.findByText('Conta reativada.')).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: 'Confirme sua senha' })).not.toBeInTheDocument()
   })
@@ -133,10 +140,10 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     const fetchMock = fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: 'Desativar João Lima' }, { timeout: 3000 }))
     await confirmDialog()
     // A janela é modal no navegador; aqui o clique por baixo dela simula uma segunda ação disparada junto.
-    await user.click(screen.getByRole('button', { name: /desativar\s*rita alves/i, hidden: true }))
+    await user.click(screen.getByRole('button', { name: 'Desativar Rita Alves', hidden: true }))
 
     const dialog = await confirmDialog()
     await user.type(within(dialog).getByLabelText('Sua senha'), 'senha-certa-123')
@@ -150,7 +157,7 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: 'Desativar João Lima' }, { timeout: 3000 }))
     await confirmDialog()
     await user.click(screen.getByRole('link', { name: 'Resumo', hidden: true }))
     expect(await screen.findByText('Confirme sua senha para continuar.')).toBeInTheDocument()

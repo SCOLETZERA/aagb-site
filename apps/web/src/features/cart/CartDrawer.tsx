@@ -141,7 +141,8 @@ export function CartDrawer() {
             {whatsapp && (
               <Button variant="secondary" fullWidth className={styles.second} onClick={sendWhatsapp} disabled={form.submitting}>
                 Enviar pelo WhatsApp
-                <span className="visually-hidden"> (abre em nova aba)</span>
+                {' '}
+                <span className="visually-hidden">(abre em nova aba)</span>
               </Button>
             )}
             <p className={styles.note}>Não há pagamento online. A associação combina o valor e a entrega com você.</p>

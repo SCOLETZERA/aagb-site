@@ -63,7 +63,8 @@ export function PrivacyPage() {
             Você pode pedir para ver, corrigir ou apagar seus dados a qualquer momento. Fale com a associação pelo Instagram{' '}
             <a href={ASSOCIATION.instagramUrl} target="_blank" rel="noopener noreferrer">
               {ASSOCIATION.instagramHandle}
-              <span className="visually-hidden"> (abre em nova aba)</span>
+              {' '}
+              <span className="visually-hidden">(abre em nova aba)</span>
             </a>{' '}
             ou na sede, informando o número de protocolo que você recebeu.
           </p>

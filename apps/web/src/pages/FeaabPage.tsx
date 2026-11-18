@@ -34,7 +34,8 @@ export function FeaabPage() {
         <ButtonLink to={ASSOCIATION.instagramUrl} target="_blank" rel="noopener noreferrer" size="lg">
           <Icon name="instagram" size={20} />
           {ASSOCIATION.instagramHandle}
-          <span className="visually-hidden"> (abre em nova aba)</span>
+          {' '}
+          <span className="visually-hidden">(abre em nova aba)</span>
         </ButtonLink>
       </section>
     </Container>

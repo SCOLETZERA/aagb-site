@@ -184,7 +184,7 @@ function Person({ name, contact, removed }: { name: string; contact: string; rem
           <>
             {' · '}
             <a href={wa} target="_blank" rel="noopener noreferrer">
-              WhatsApp<span className="visually-hidden"> (abre em nova aba)</span>
+              WhatsApp <span className="visually-hidden">(abre em nova aba)</span>
             </a>
           </>
         )}
