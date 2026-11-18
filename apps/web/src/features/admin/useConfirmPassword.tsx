@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { FormError, TextField } from '@/components/ui/Field'
@@ -10,7 +10,8 @@ const CANCELLED = 'Confirme sua senha para continuar.'
 /**
  * Ações sobre contas exigem senha confirmada há pouco. `guard(run)` roda a ação; se o servidor
  * pedir confirmação (`code: "confirm_password"`), abre a janela "Confirme sua senha", confirma e
- * repete a ação uma vez. Fechar a janela cancela a ação.
+ * repete a ação uma vez. Fechar a janela, ou sair da tela com ela aberta, cancela a ação.
+ * Se outra ação pedir confirmação enquanto a janela está aberta, as duas esperam a mesma confirmação.
  */
 export function useConfirmPassword(): { guard<T>(run: () => Promise<T>): Promise<T>; dialog: ReactNode } {
   const { client } = useAdminAuth()
@@ -18,7 +19,17 @@ export function useConfirmPassword(): { guard<T>(run: () => Promise<T>): Promise
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const pending = useRef<{ confirmed(): void; cancelled(): void } | null>(null)
+  // Ações esperando a confirmação. Todas seguem juntas ao confirmar e são canceladas juntas ao fechar.
+  const waiting = useRef<{ confirmed(): void; cancelled(): void }[]>([])
+
+  const settle = useCallback((how: 'confirmed' | 'cancelled') => {
+    const all = waiting.current
+    waiting.current = []
+    for (const w of all) w[how]()
+  }, [])
+
+  // Sair da tela com a janela aberta: nenhuma ação fica esperando para sempre.
+  useEffect(() => () => settle('cancelled'), [settle])
 
   const close = useCallback(() => {
     setOpen(false)
@@ -33,7 +44,7 @@ export function useConfirmPassword(): { guard<T>(run: () => Promise<T>): Promise
       if (!(err instanceof ApiError) || err.code !== 'confirm_password') throw err
     }
     await new Promise<void>((resolve, reject) => {
-      pending.current = { confirmed: resolve, cancelled: () => reject(new ApiError(CANCELLED, 403)) }
+      waiting.current.push({ confirmed: resolve, cancelled: () => reject(new ApiError(CANCELLED, 403)) })
       setOpen(true)
     })
     return run()
@@ -45,10 +56,8 @@ export function useConfirmPassword(): { guard<T>(run: () => Promise<T>): Promise
     setError(null)
     try {
       await client.request('/admin/auth/confirm', { method: 'POST', body: { password } })
-      const done = pending.current
-      pending.current = null
       close()
-      done?.confirmed()
+      settle('confirmed')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Não foi possível confirmar.')
     } finally {
@@ -57,10 +66,8 @@ export function useConfirmPassword(): { guard<T>(run: () => Promise<T>): Promise
   }
 
   function cancel() {
-    const waiting = pending.current
-    pending.current = null
     close()
-    waiting?.cancelled()
+    settle('cancelled')
   }
 
   const dialog = (

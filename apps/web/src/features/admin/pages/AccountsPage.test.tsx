@@ -17,6 +17,7 @@ function fakeApi() {
   const accounts = [
     { id: 'u1', email: 'ana@aagb.test', name: 'Ana Souza', active: true, createdAt: '2026-11-01T12:00:00.000Z' },
     { id: 'u2', email: 'joao@aagb.test', name: 'João Lima', active: true, createdAt: '2026-11-02T12:00:00.000Z' },
+    { id: 'u3', email: 'rita@aagb.test', name: 'Rita Alves', active: true, createdAt: '2026-11-03T12:00:00.000Z' },
   ]
   const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
     const url = String(input).replace('http://api.test/api', '')
@@ -126,5 +127,32 @@ describe('contas: confirmação de senha', () => {
     await user.click(await screen.findByRole('button', { name: /reativar\s*joão lima/i }))
     expect(await screen.findByText('Conta reativada.')).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: 'Confirme sua senha' })).not.toBeInTheDocument()
+  })
+
+  it('duas ações esperando a mesma confirmação seguem juntas depois dela', async () => {
+    const user = userEvent.setup()
+    const fetchMock = fakeApi()
+    renderAccounts()
+    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
+    await confirmDialog()
+    // A janela é modal no navegador; aqui o clique por baixo dela simula uma segunda ação disparada junto.
+    await user.click(screen.getByRole('button', { name: /desativar\s*rita alves/i, hidden: true }))
+
+    const dialog = await confirmDialog()
+    await user.type(within(dialog).getByLabelText('Sua senha'), 'senha-certa-123')
+    await user.click(within(dialog).getByRole('button', { name: 'Confirmar' }))
+
+    await waitFor(() => expect(calls(fetchMock, '/admin/users/u2', 'PATCH')).toBe(2))
+    await waitFor(() => expect(calls(fetchMock, '/admin/users/u3', 'PATCH')).toBe(2))
+  })
+
+  it('sair da tela com a janela aberta cancela a ação', async () => {
+    const user = userEvent.setup()
+    fakeApi()
+    renderAccounts()
+    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
+    await confirmDialog()
+    await user.click(screen.getByRole('link', { name: 'Resumo', hidden: true }))
+    expect(await screen.findByText('Confirme sua senha para continuar.')).toBeInTheDocument()
   })
 })
