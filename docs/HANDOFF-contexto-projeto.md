@@ -29,7 +29,7 @@ Partes:
 npm install                      # também gera o client do Prisma
 npm run lint                     # API + web
 npm run typecheck                # shared + API + web
-npm test                         # API (74 testes) + web (49 testes)
+npm test                         # API (78 testes) + web (52 testes)
 npm run build                    # API (esbuild) + web (Vite)
 ```
 
@@ -83,11 +83,12 @@ apps/web/src/
 - Login, `/me` e a lista de contas não devolvem papel. Ninguém desativa a própria conta.
 - **Confirmação de senha** (17/11/2026, depois da revisão do papel único):
   - criar conta, alterar conta e trocar senha (`POST /users`, `PATCH /users/:id`, `PUT /users/:id/password`) exigem que a senha tenha sido confirmada **há no máximo 5 minutos naquele login**;
-  - a confirmação é feita em `POST /api/admin/auth/confirm` e fica em `Session.confirmedAt`; a renovação do token mantém o valor, mas outro login da mesma pessoa não aproveita a confirmação;
+  - a confirmação é feita em `POST /api/admin/auth/confirm` e gravada em `Session.confirmedAt` de **todas** as linhas da família de sessões; a checagem lê a mais recente da família. Assim, ela sobrevive à renovação do token (inclusive se as duas coisas acontecerem ao mesmo tempo), mas outro login da mesma pessoa não aproveita a confirmação;
   - sem confirmação recente, a resposta é 403 com `code: "confirm_password"`, e o painel abre a janela "Confirme sua senha" (`useConfirmPassword.tsx`) e repete a ação;
-  - senha errada na confirmação conta para o mesmo bloqueio do login e responde 403, nunca 401 (com 401, o painel tentaria renovar a sessão e deslogaria a pessoa);
+  - senha errada na confirmação conta para o mesmo bloqueio do login e responde 403, nunca 401 (com 401, o painel tentaria renovar a sessão e deslogaria a pessoa); cada tentativa errada ou bloqueada grava `auth.confirm-failed` na auditoria;
+  - no painel, várias ações podem esperar a mesma confirmação; fechar a janela ou sair da tela cancela todas;
   - objetivo: uma sessão roubada, sozinha, não basta para trocar a senha dos outros nem criar uma conta própria.
-- Cada grupo de rotas é registrado com `app.register` próprio e coloca `requireAdmin()` como hook do grupo. O teste `test/admin-routes.test.ts` percorre **todas** as rotas registradas sob `/api/admin` e falha se alguma, fora login/refresh/logout, responder sem login. **Não use `fastify-plugin` nesses grupos**: isso vazaria o hook para outros grupos. Rotas sem login no prefixo `/api/admin`: só `auth/login`, `auth/refresh` e `auth/logout`.
+- Cada grupo de rotas é registrado com `app.register` próprio e coloca `requireAdmin()` como hook do grupo. O teste `test/admin-routes.test.ts` percorre **todas** as rotas registradas e falha se: alguma rota sob `/api/admin`, fora login/refresh/logout, responder sem login; aparecer rota fora de `/api/admin` que não esteja no inventário de rotas públicas (`PUBLIC_ROUTES`); ou alguma escrita em `/api/admin/users` não exigir senha confirmada. Rota pública nova exige incluir no inventário, de propósito. **Não use `fastify-plugin` nesses grupos**: isso vazaria o hook para outros grupos. Rotas sem login no prefixo `/api/admin`: só `auth/login`, `auth/refresh` e `auth/logout`.
 - Se a próxima tarefa reintroduzir papéis ou permissões finas, siga o padrão anterior: checagem no servidor em cada grupo de rotas, papel relido do banco (nunca do token) e testes de 403 por papel.
 
 **CSRF e rede** (`plugins/security.ts`)
