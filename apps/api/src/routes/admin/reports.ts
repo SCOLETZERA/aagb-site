@@ -7,8 +7,9 @@ const auditQuery = z.object({ page: z.coerce.number().int().min(1).max(10_000).d
 /** Auditoria e resumo do painel. */
 export async function reportRoutes(app: FastifyInstance) {
   const db = app.prisma
+  app.addHook('preHandler', requireAdmin())
 
-  app.get('/audit', { preHandler: requireAdmin() }, async (req) => {
+  app.get('/audit', async (req) => {
     const { page } = auditQuery.parse(req.query)
     return db.auditLog.findMany({
       orderBy: { createdAt: 'desc' },
@@ -19,7 +20,7 @@ export async function reportRoutes(app: FastifyInstance) {
   })
 
   /** Contagens por status e vendas por produto (pedidos não cancelados). Sem dados pessoais. */
-  app.get('/reports/summary', { preHandler: requireAdmin() }, async () => {
+  app.get('/reports/summary', async () => {
     const [orders, serviceRequests, donationOffers, sales] = await Promise.all([
       db.order.groupBy({ by: ['status'], _count: { _all: true }, _sum: { totalCents: true } }),
       db.serviceRequest.groupBy({ by: ['status'], _count: { _all: true } }),

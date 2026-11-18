@@ -3,7 +3,7 @@ import { copyFileSync } from 'node:fs'
 import path from 'node:path'
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify'
 import { afterAll } from 'vitest'
-import { buildApp } from '../src/app.js'
+import { buildApp, type BuildOptions } from '../src/app.js'
 import { loadConfig } from '../src/config.js'
 import { TEMPLATE_DB, TMP_DIR } from './paths.js'
 
@@ -12,7 +12,7 @@ export const JWT_SECRET = 'segredo-de-teste-com-mais-de-32-caracteres'
 export const PASSWORD = 'senha-forte-de-teste'
 
 /** App com banco próprio (cópia do modelo já populado). Fechado automaticamente no fim do arquivo. */
-export async function makeApp(env: Record<string, string> = {}, before?: (app: FastifyInstance) => void) {
+export async function makeApp(env: Record<string, string> = {}, before?: (app: FastifyInstance) => void, options: BuildOptions = {}) {
   const id = randomUUID()
   const dbFile = path.join(TMP_DIR, `${id}.db`)
   copyFileSync(TEMPLATE_DB, dbFile)
@@ -30,7 +30,7 @@ export async function makeApp(env: Record<string, string> = {}, before?: (app: F
     UPLOAD_DIR: path.join(TMP_DIR, `uploads-${id}`),
     ...env,
   })
-  const app = await buildApp(config)
+  const app = await buildApp(config, options)
   before?.(app)
   await app.ready()
   afterAll(() => app.close())

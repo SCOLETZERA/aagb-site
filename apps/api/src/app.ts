@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import Fastify, { type FastifyInstance } from 'fastify'
+import Fastify, { type FastifyInstance, type RouteOptions } from 'fastify'
 import type { Config } from './config.js'
 import { errorHandler, notFoundHandler } from './lib/errors.js'
 import { registerAuth } from './plugins/auth.js'
@@ -23,7 +23,12 @@ declare module 'fastify' {
 /** Limite do corpo JSON. Os formulários mais longos ficam bem abaixo disso. */
 export const BODY_LIMIT_BYTES = 64 * 1024
 
-export async function buildApp(config: Config): Promise<FastifyInstance> {
+export interface BuildOptions {
+  /** Chamado para cada rota registrada (os testes usam para listar todas as rotas do painel). */
+  onRoute?: (route: RouteOptions) => void
+}
+
+export async function buildApp(config: Config, options: BuildOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: BODY_LIMIT_BYTES,
     // Confia só nos N proxies mais próximos (o tipo do Fastify não aceita o número direto).
@@ -37,6 +42,8 @@ export async function buildApp(config: Config): Promise<FastifyInstance> {
       },
     },
   })
+
+  if (options.onRoute) app.addHook('onRoute', options.onRoute)
 
   const prisma = new PrismaClient({ datasourceUrl: config.DATABASE_URL })
   app.decorate('prisma', prisma)
