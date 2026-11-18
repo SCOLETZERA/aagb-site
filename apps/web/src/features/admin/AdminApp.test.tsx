@@ -95,5 +95,6 @@ describe('texto da auditoria', () => {
     expect(describeAction('donation-offer.anonymize')).toBe('apagou os dados pessoais de oferta de doação')
     expect(describeAction('auth.login')).toBe('entrou no painel')
     expect(describeAction('auth.confirm')).toBe('confirmou a senha')
+    expect(describeAction('auth.confirm-failed')).toBe('errou a senha ao confirmar')
   })
 })

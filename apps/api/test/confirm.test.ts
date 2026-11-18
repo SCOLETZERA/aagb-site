@@ -40,6 +40,15 @@ describe('confirmação de senha', () => {
     expect(session!.confirmedAt).toBeNull()
   })
 
+  it('tentativas erradas e bloqueadas ficam na auditoria, sem a senha digitada', async () => {
+    const who = await loggedIn(app)
+    for (let i = 0; i < MAX_FAILED_LOGINS + 1; i++) await confirmAs(who, 'senha-errada-qualquer')
+    const audit = await app.prisma.auditLog.findMany({ where: { userId: who.user.id, action: 'auth.confirm-failed' } })
+    expect(audit).toHaveLength(MAX_FAILED_LOGINS + 1)
+    expect(audit.every((a) => a.target === `user:${who.user.id}`)).toBe(true)
+    expect(JSON.stringify(audit)).not.toContain('senha-errada-qualquer')
+  })
+
   it('cinco senhas erradas bloqueiam a conta, inclusive o login', async () => {
     const who = await loggedIn(app)
     for (let i = 0; i < MAX_FAILED_LOGINS; i++) await confirmAs(who, 'senha-errada-qualquer')

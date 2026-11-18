@@ -67,7 +67,13 @@ export async function adminAuthRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const { password } = confirmBody.parse(req.body)
       const me = adminOf(req)
-      await authService.confirmPassword(me.id, adminSessionOf(req).familyId, password)
+      try {
+        await authService.confirmPassword(me.id, adminSessionOf(req).familyId, password)
+      } catch (error) {
+        // Senha errada (ou conta bloqueada) numa sessão aberta pode indicar sessão roubada: fica registrado.
+        if (error instanceof AppError && error.status === 403) await audit(prisma, me.id, 'auth.confirm-failed', `user:${me.id}`)
+        throw error
+      }
       await audit(prisma, me.id, 'auth.confirm', `user:${me.id}`)
       return reply.status(204).send()
     },
