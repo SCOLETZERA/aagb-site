@@ -208,6 +208,8 @@ model Session {
   familyId  String
   expiresAt DateTime
   revokedAt DateTime?
+  /// Quando a senha foi confirmada nesta família de sessões (ações sobre contas exigem confirmação recente).
+  confirmedAt DateTime?
   createdAt DateTime  @default(now())
 
   @@index([familyId])

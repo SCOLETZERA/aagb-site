@@ -22,6 +22,8 @@ declare module 'fastify' {
   interface FastifyRequest {
     /** Usuário do painel, preenchido por `requireAdmin`. */
     admin?: AdminUser
+    /** Sessão atual do painel, preenchida por `requireAdmin`. */
+    adminSession?: { familyId: string }
   }
 }
 
@@ -73,7 +75,36 @@ export function requireAdmin() {
     ])
     if (!user || !user.active || !session) throw new AppError(401, 'Sua sessão expirou. Entre de novo.')
     request.admin = { id: user.id, email: user.email, name: user.name }
+    request.adminSession = { familyId: session.familyId }
   }
+}
+
+/** Por quanto tempo a senha confirmada libera as ações sobre contas. */
+export const CONFIRMATION_TTL_MS = 5 * 60_000
+
+/**
+ * Exige que a senha tenha sido confirmada nesta família de sessões há no máximo 5 minutos.
+ * Assim, uma sessão roubada sozinha não basta para criar contas ou trocar senhas. Usar depois de `requireAdmin`.
+ */
+export function requireRecentConfirmation(now: () => Date = () => new Date()) {
+  return async function (this: FastifyInstance, request: FastifyRequest) {
+    // A confirmação vale para a família de sessões do login, não para uma linha: a renovação troca a linha.
+    const latest = await this.prisma.session.findFirst({
+      where: { userId: adminOf(request).id, familyId: adminSessionOf(request).familyId, confirmedAt: { not: null } },
+      orderBy: { confirmedAt: 'desc' },
+      select: { confirmedAt: true },
+    })
+    const confirmedAt = latest?.confirmedAt
+    if (!confirmedAt || now().getTime() - confirmedAt.getTime() > CONFIRMATION_TTL_MS) {
+      throw new AppError(403, 'Confirme sua senha para continuar.', 'confirm_password')
+    }
+  }
+}
+
+/** Para uso nos handlers depois de `requireAdmin`. */
+export function adminSessionOf(request: FastifyRequest) {
+  if (!request.adminSession) throw new AppError(401, 'Faça login para continuar.')
+  return request.adminSession
 }
 
 /** Para uso nos handlers depois de `requireAdmin`. */

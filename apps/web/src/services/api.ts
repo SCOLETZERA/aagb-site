@@ -45,10 +45,13 @@ export class ApiError extends Error {
   readonly status: number
   /** Erro de cada campo, quando o servidor recusa os dados (status 400). */
   readonly fields: Record<string, string>
-  constructor(message: string, status = 500, fields: Record<string, string> = {}) {
+  /** Identificador estável enviado pelo servidor (ex.: `confirm_password`). */
+  readonly code?: string
+  constructor(message: string, status = 500, fields: Record<string, string> = {}, code?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.fields = fields
+    this.code = code
   }
 }

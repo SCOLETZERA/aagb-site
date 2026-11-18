@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { anonymizeExpired, purgeOldSessions, REMOVED } from '../src/services/retention.js'
-import { ORIGIN, loggedIn, makeApp } from './helpers.js'
+import { ORIGIN, confirm, loggedIn, makeApp } from './helpers.js'
 
 const app = await makeApp()
 const admin = await loggedIn(app)
@@ -244,6 +244,9 @@ describe('documentos', () => {
 })
 
 describe('contas e relatórios', () => {
+  // Ações sobre contas exigem senha confirmada há pouco (ver confirm.test.ts).
+  beforeAll(() => confirm(app, admin))
+
   it('cria contas; e-mail repetido e senha curta são recusados', async () => {
     const payload = { email: 'Nova.Pessoa@AAGB.test', name: 'Nova Pessoa', password: 'senha-bem-comprida' }
     const created = await asAdmin('POST', '/api/admin/users', payload)

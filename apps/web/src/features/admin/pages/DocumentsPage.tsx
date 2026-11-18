@@ -68,7 +68,7 @@ export function DocumentsPage() {
                     <td>{formatDate(d.publishedAt, 'short')}</td>
                     <td>
                       <button type="button" className={`${styles.linkButton} ${styles.danger}`} onClick={() => void remove(d)}>
-                        Remover<span className="visually-hidden"> {d.title}</span>
+                        Remover <span className="visually-hidden">{d.title}</span>
                       </button>
                     </td>
                   </tr>

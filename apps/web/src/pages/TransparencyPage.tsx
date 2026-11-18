@@ -37,7 +37,8 @@ export function TransparencyPage() {
                         <Icon name="clip" size={20} />
                         <span>{d.title}</span>
                         <span className={styles.date}>{formatDate(d.publishedAt, 'short')}</span>
-                        <span className="visually-hidden"> (abre em nova aba)</span>
+                        {' '}
+                        <span className="visually-hidden">(abre em nova aba)</span>
                       </a>
                     </li>
                   ))}

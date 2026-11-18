@@ -5,10 +5,13 @@ import { REQUIRED_MESSAGE } from './zod-messages.js'
 /** Erro com mensagem pensada para o usuário final (em português) e status HTTP. */
 export class AppError extends Error {
   readonly status: number
-  constructor(status: number, message: string) {
+  /** Identificador estável para o front reagir ao erro (ex.: `confirm_password`). */
+  readonly code?: string
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.name = 'AppError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -18,6 +21,8 @@ export interface ErrorBody {
   message: string
   /** Primeiro erro de cada campo, quando a falha é de validação. */
   fields?: Record<string, string>
+  /** Identificador estável do erro, quando o front precisa reagir a ele. */
+  code?: string
 }
 
 function zodBody(error: ZodError): ErrorBody {
@@ -44,7 +49,10 @@ const FASTIFY_MESSAGES: Record<number, string> = {
 
 export function errorHandler(error: FastifyError | Error, request: FastifyRequest, reply: FastifyReply) {
   if (error instanceof ZodError) return reply.status(400).send(zodBody(error))
-  if (error instanceof AppError) return reply.status(error.status).send({ message: error.message })
+  if (error instanceof AppError) {
+    const body: ErrorBody = { message: error.message, ...(error.code ? { code: error.code } : {}) }
+    return reply.status(error.status).send(body)
+  }
 
   const status = 'statusCode' in error && typeof error.statusCode === 'number' ? error.statusCode : 500
   if (status < 500) {

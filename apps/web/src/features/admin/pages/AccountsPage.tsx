@@ -8,10 +8,12 @@ import { ApiError } from '@/services/api'
 import { useAdminAuth, useAdminUser } from '../AdminAuth'
 import { formatDateTime } from '../format'
 import type { Account } from '../types'
+import { useConfirmPassword } from '../useConfirmPassword'
 import { AdminHeader, useAdminResource } from '../ui'
 import styles from '../admin.module.css'
 
 type Dialog = { kind: 'new' } | { kind: 'password'; account: Account } | null
+type Guard = ReturnType<typeof useConfirmPassword>['guard']
 
 export function AccountsPage() {
   const me = useAdminUser()
@@ -19,10 +21,11 @@ export function AccountsPage() {
   const toast = useToast()
   const accounts = useAdminResource<Account[]>('/admin/users')
   const [dialog, setDialog] = useState<Dialog>(null)
+  const { guard, dialog: confirmDialog } = useConfirmPassword()
 
   async function update(account: Account, body: { active: boolean }, done: string) {
     try {
-      await client.request(`/admin/users/${account.id}`, { method: 'PATCH', body })
+      await guard(() => client.request(`/admin/users/${account.id}`, { method: 'PATCH', body }))
       toast.show(done)
       accounts.reload()
     } catch (error) {
@@ -56,7 +59,7 @@ export function AccountsPage() {
                 <p className={styles.muted}>Criada em {formatDateTime(a.createdAt)}</p>
                 <div className={styles.actions}>
                   <button type="button" className={styles.linkButton} onClick={() => setDialog({ kind: 'password', account: a })}>
-                    Trocar senha<span className="visually-hidden"> de {a.name}</span>
+                    Trocar senha <span className="visually-hidden">de {a.name}</span>
                   </button>
                   {!self && (
                     <button
@@ -68,7 +71,8 @@ export function AccountsPage() {
                       }}
                     >
                       {a.active ? 'Desativar' : 'Reativar'}
-                      <span className="visually-hidden"> {a.name}</span>
+                      {' '}
+                      <span className="visually-hidden">{a.name}</span>
                     </button>
                   )}
                 </div>
@@ -85,6 +89,7 @@ export function AccountsPage() {
       >
         {dialog?.kind === 'new' && (
           <NewAccountForm
+            guard={guard}
             onDone={() => {
               toast.show('Conta criada.')
               setDialog(null)
@@ -94,6 +99,7 @@ export function AccountsPage() {
         )}
         {dialog?.kind === 'password' && (
           <PasswordForm
+            guard={guard}
             account={dialog.account}
             onDone={() => {
               toast.show('Senha trocada. As sessões abertas dessa conta foram encerradas.')
@@ -102,6 +108,7 @@ export function AccountsPage() {
           />
         )}
       </Drawer>
+      {confirmDialog}
     </>
   )
 }
@@ -128,11 +135,11 @@ function useSubmit(run: () => Promise<void>) {
   return { errors, formError, busy, submit }
 }
 
-function NewAccountForm({ onDone }: { onDone(): void }) {
+function NewAccountForm({ guard, onDone }: { guard: Guard; onDone(): void }) {
   const { client } = useAdminAuth()
   const [values, setValues] = useState({ name: '', email: '', password: '' })
   const form = useSubmit(async () => {
-    await client.request('/admin/users', { method: 'POST', body: values })
+    await guard(() => client.request('/admin/users', { method: 'POST', body: values }))
     onDone()
   })
   const bind = (name: keyof typeof values) => ({
@@ -154,11 +161,11 @@ function NewAccountForm({ onDone }: { onDone(): void }) {
   )
 }
 
-function PasswordForm({ account, onDone }: { account: Account; onDone(): void }) {
+function PasswordForm({ guard, account, onDone }: { guard: Guard; account: Account; onDone(): void }) {
   const { client } = useAdminAuth()
   const [password, setPassword] = useState('')
   const form = useSubmit(async () => {
-    await client.request(`/admin/users/${account.id}/password`, { method: 'PUT', body: { password } })
+    await guard(() => client.request(`/admin/users/${account.id}/password`, { method: 'PUT', body: { password } }))
     onDone()
   })
 

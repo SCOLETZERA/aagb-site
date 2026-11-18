@@ -2,13 +2,15 @@ import type { User } from '@prisma/client'
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { AppError } from '../../lib/errors.js'
-import { REFRESH_COOKIE, adminOf, clearAuthCookies, requireAdmin, setAuthCookies } from '../../plugins/auth.js'
+import { REFRESH_COOKIE, adminOf, adminSessionOf, clearAuthCookies, requireAdmin, setAuthCookies } from '../../plugins/auth.js'
 import { audit } from '../../services/audit.js'
 
 const loginBody = z.object({
   email: z.string().trim().toLowerCase().max(254),
   password: z.string().max(200),
 })
+
+const confirmBody = z.object({ password: z.string().min(1).max(200) })
 
 const publicUser = (u: Pick<User, 'id' | 'email' | 'name'>) => ({ id: u.id, email: u.email, name: u.name })
 
@@ -57,4 +59,23 @@ export async function adminAuthRoutes(app: FastifyInstance) {
   })
 
   app.get('/me', { preHandler: requireAdmin() }, async (req) => ({ user: publicUser(adminOf(req)) }))
+
+  /** Confirma a senha de quem está logado. Ações sobre contas exigem confirmação recente. */
+  app.post(
+    '/confirm',
+    { preHandler: requireAdmin(), config: { rateLimit: { max: config.LOGIN_RATE_LIMIT_PER_MINUTE, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      const { password } = confirmBody.parse(req.body)
+      const me = adminOf(req)
+      try {
+        await authService.confirmPassword(me.id, adminSessionOf(req).familyId, password)
+      } catch (error) {
+        // Senha errada (ou conta bloqueada) numa sessão aberta pode indicar sessão roubada: fica registrado.
+        if (error instanceof AppError && error.status === 403) await audit(prisma, me.id, 'auth.confirm-failed', `user:${me.id}`)
+        throw error
+      }
+      await audit(prisma, me.id, 'auth.confirm', `user:${me.id}`)
+      return reply.status(204).send()
+    },
+  )
 }

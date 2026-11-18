@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ACCESS_COOKIE, REFRESH_COOKIE } from '../src/plugins/auth.js'
 import { INVALID_LOGIN, MAX_FAILED_LOGINS, lockMinutes } from '../src/services/auth.js'
-import { ORIGIN, PASSWORD, cookieHeader, createUser, loggedIn, login, makeApp, rawJwt } from './helpers.js'
+import { ORIGIN, PASSWORD, confirm, cookieHeader, createUser, loggedIn, login, makeApp, rawJwt } from './helpers.js'
 
 const app = await makeApp()
 const me = (cookie: string) => app.inject({ url: '/api/admin/auth/me', headers: { cookie } })
@@ -167,6 +167,7 @@ describe('CSRF e acesso', () => {
   it('desativar vale na hora, sem esperar o token expirar', async () => {
     const admin = await loggedIn(app)
     const other = await loggedIn(app)
+    await confirm(app, admin)
     const patch = (payload: object) =>
       app.inject({
         method: 'PATCH',

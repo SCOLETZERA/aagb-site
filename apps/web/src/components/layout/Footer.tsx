@@ -29,7 +29,8 @@ export function Footer() {
               <Icon name="instagram" size={20} />
               <a href={ASSOCIATION.instagramUrl} target="_blank" rel="noopener noreferrer">
                 {ASSOCIATION.instagramHandle}
-                <span className="visually-hidden"> (abre em nova aba)</span>
+                {' '}
+                <span className="visually-hidden">(abre em nova aba)</span>
               </a>
             </p>
           </div>

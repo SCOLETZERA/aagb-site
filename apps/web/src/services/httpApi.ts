@@ -3,10 +3,11 @@ import { ApiError, type Api } from './api'
 
 /** Converte a resposta de erro da API (`{ message, fields? }`) em `ApiError`. */
 export async function errorFrom(res: Response): Promise<ApiError> {
-  const body = (await res.json().catch(() => null)) as { message?: unknown; fields?: unknown } | null
+  const body = (await res.json().catch(() => null)) as { message?: unknown; fields?: unknown; code?: unknown } | null
   const message = typeof body?.message === 'string' ? body.message : 'Algo deu errado. Tente novamente.'
   const fields = body?.fields && typeof body.fields === 'object' ? (body.fields as Record<string, string>) : {}
-  return new ApiError(message, res.status, fields)
+  const code = typeof body?.code === 'string' ? body.code : undefined
+  return new ApiError(message, res.status, fields, code)
 }
 
 /**

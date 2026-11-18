@@ -34,6 +34,8 @@ const VERB: Record<string, string> = {
 /** "order.status.cancelado" → "mudou pedido para Cancelado"; "products.update" → "editou produto". */
 export function describeAction(action: string): string {
   if (action === 'auth.login') return 'entrou no painel'
+  if (action === 'auth.confirm') return 'confirmou a senha'
+  if (action === 'auth.confirm-failed') return 'errou a senha ao confirmar'
   const [what = '', verb = '', extra] = action.split('.')
   const noun = WHAT[what] ?? what
   if (verb === 'status' && extra) return `mudou ${noun} para ${STATUS_LABEL[extra as InboxStatus] ?? extra}`
