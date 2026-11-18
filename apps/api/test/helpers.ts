@@ -24,7 +24,10 @@ export async function createTestDatabase(): Promise<{ url: string; drop(): Promi
       await admin.$executeRawUnsafe(`CREATE DATABASE ${name} TEMPLATE ${TEMPLATE_DB}`)
       break
     } catch (error) {
-      if (attempt >= 50 || !String(error).includes('is being accessed by other users')) throw error
+      if (attempt >= 50 || !String(error).includes('is being accessed by other users')) {
+        await admin.$disconnect()
+        throw error
+      }
       await new Promise((r) => setTimeout(r, 100))
     }
   }

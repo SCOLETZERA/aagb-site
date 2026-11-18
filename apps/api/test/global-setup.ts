@@ -39,19 +39,35 @@ export default async function setup(project: TestProject) {
   const pg = new EmbeddedPostgres({ databaseDir: PG_DIR, user: 'postgres', password, port, persistent: false, onLog: () => {} })
   await pg.initialise()
   await pg.start()
-  const server = `postgresql://postgres:${password}@127.0.0.1:${port}`
+  try {
+    project.provide('pgServerUrl', await prepareTemplate(`postgresql://postgres:${password}@127.0.0.1:${port}`))
+  } catch (error) {
+    // Falhou no meio: não deixa o Postgres rodando.
+    await pg.stop()
+    throw error
+  }
+
+  return async () => {
+    await pg.stop()
+    rmSync(TMP_DIR, { recursive: true, force: true })
+  }
+}
+
+/** Cria o banco-modelo: papéis do Supabase, migrações e dados de exemplo. Devolve o endereço do servidor. */
+async function prepareTemplate(server: string): Promise<string> {
 
   // Imita o pior caso do Supabase: papéis públicos com acesso padrão a todo esquema e tabela novos.
   // A migração precisa tirar esse acesso (ver supabase.test.ts).
   const admin = new PrismaClient({ datasourceUrl: `${server}/postgres` })
   await admin.$executeRawUnsafe('CREATE ROLE anon NOLOGIN')
   await admin.$executeRawUnsafe('CREATE ROLE authenticated NOLOGIN')
+  await admin.$executeRawUnsafe('CREATE ROLE service_role NOLOGIN')
   await admin.$executeRawUnsafe(`CREATE DATABASE ${TEMPLATE_DB}`)
   await admin.$disconnect()
   // Permissões padrão valem por banco: são gravadas no banco-modelo, antes da migração.
   const template = new PrismaClient({ datasourceUrl: `${server}/${TEMPLATE_DB}` })
-  await template.$executeRawUnsafe('ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT USAGE ON SCHEMAS TO anon, authenticated')
-  await template.$executeRawUnsafe('ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON TABLES TO anon, authenticated')
+  await template.$executeRawUnsafe('ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT USAGE ON SCHEMAS TO anon, authenticated, service_role')
+  await template.$executeRawUnsafe('ALTER DEFAULT PRIVILEGES FOR ROLE postgres GRANT ALL ON TABLES TO anon, authenticated, service_role')
   await template.$disconnect()
 
   const url = `${server}/${TEMPLATE_DB}?schema=${DB_SCHEMA}`
@@ -63,11 +79,5 @@ export default async function setup(project: TestProject) {
   const prisma = new PrismaClient({ datasourceUrl: url })
   await seedSampleData(prisma)
   await prisma.$disconnect()
-
-  project.provide('pgServerUrl', server)
-
-  return async () => {
-    await pg.stop()
-    rmSync(TMP_DIR, { recursive: true, force: true })
-  }
+  return server
 }

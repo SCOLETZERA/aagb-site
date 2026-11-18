@@ -45,6 +45,12 @@ export async function registerSecurity(app: FastifyInstance, config: Config) {
   // Sem corpo em texto puro: só JSON (registrado por padrão) e multipart (onde for registrado).
   app.removeContentTypeParser('text/plain')
 
+  // O Postgres não aceita o caractere nulo (U+0000) em texto: recusa antes de chegar ao banco,
+  // em vez de virar erro 500.
+  app.addHook('preValidation', async (request) => {
+    if (hasNulChar(request.body)) throw new AppError(400, 'Os dados enviados têm caracteres inválidos.')
+  })
+
   // Usa o padrão da rota já resolvida, não a URL crua: "/api/%61dmin/…" chega à mesma rota
   // que "/api/admin/…" e não pode escapar da checagem.
   app.addHook('onRequest', async (request) => {
@@ -55,4 +61,14 @@ export async function registerSecurity(app: FastifyInstance, config: Config) {
       throw new AppError(403, 'Origem da requisição não permitida.')
     }
   })
+}
+
+const NUL = String.fromCharCode(0)
+
+/** Procura o caractere nulo em qualquer texto do corpo (objetos e listas aninhados). */
+function hasNulChar(value: unknown): boolean {
+  if (typeof value === 'string') return value.includes(NUL)
+  if (Array.isArray(value)) return value.some(hasNulChar)
+  if (value && typeof value === 'object') return Object.entries(value).some(([k, v]) => k.includes(NUL) || hasNulChar(v))
+  return false
 }

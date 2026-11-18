@@ -277,7 +277,7 @@ ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userI
 -- O Supabase tem papéis públicos (anon, authenticated) usados pela Data API com a chave pública.
 -- Quem acessa o banco é só a API da AAGB, como dono das tabelas; esses papéis não podem ler nada.
 --   1. Recusa criar as tabelas no "public", que a Data API expõe.
---   2. Tira dos papéis públicos o acesso ao esquema. Sem USAGE no esquema, nenhuma tabela dele,
+--   2. Tira dos papéis da Data API (anon, authenticated e service_role) o acesso ao esquema. Sem USAGE no esquema, nenhuma tabela dele,
 --      inclusive as criadas por migrações futuras, fica acessível, mesmo com GRANT na tabela.
 --   3. Tira também os GRANTs das tabelas e liga RLS sem políticas, como segunda barreira.
 --      O dono das tabelas (a API) não é afetado pelo RLS.
@@ -291,7 +291,7 @@ BEGIN
     RAISE EXCEPTION 'Use um esquema próprio: acrescente schema=aagb ao endereço do banco (o "public" pode ficar exposto pela Data API do Supabase).';
   END IF;
 
-  FOREACH papel IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+  FOREACH papel IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = papel) THEN
       EXECUTE format('REVOKE ALL ON SCHEMA %I FROM %I', current_schema(), papel);
       EXECUTE format('REVOKE ALL ON ALL TABLES IN SCHEMA %I FROM %I', current_schema(), papel);

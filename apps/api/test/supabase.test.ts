@@ -14,7 +14,7 @@ afterAll(async () => {
 })
 
 /** Roda uma consulta como o papel público `role` e devolve a mensagem de erro (ou null se deu certo). */
-async function asRole(role: 'anon' | 'authenticated', sql: string): Promise<string | null> {
+async function asRole(role: 'anon' | 'authenticated' | 'service_role', sql: string): Promise<string | null> {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(`SET LOCAL ROLE ${role}`)
@@ -28,7 +28,7 @@ async function asRole(role: 'anon' | 'authenticated', sql: string): Promise<stri
 
 describe('proteção para o Supabase', () => {
   it('os papéis públicos não leem nem alteram as tabelas', async () => {
-    for (const role of ['anon', 'authenticated'] as const) {
+    for (const role of ['anon', 'authenticated', 'service_role'] as const) {
       expect(await asRole(role, 'SELECT "passwordHash" FROM aagb."User"')).toMatch(/permission denied/)
       expect(await asRole(role, 'SELECT * FROM aagb."Order"')).toMatch(/permission denied/)
       expect(await asRole(role, `DELETE FROM aagb."Article"`)).toMatch(/permission denied/)

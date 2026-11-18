@@ -47,4 +47,23 @@ describe('configuração', () => {
     expect(() => loadConfig({ ...prod, DATABASE_URL: `${supabase}?pgbouncer=true&schema=aagb` })).toThrow(/sslmode/)
     expect(() => loadConfig({ ...prod, DATABASE_URL: `${supabase}?pgbouncer=true&schema=aagb&sslmode=disable` })).toThrow(/sslmode/)
   })
+
+  it('em produção aceita só sslmode=require, sem parâmetros repetidos', () => {
+    const prod = { ...valid, NODE_ENV: 'production' }
+    const base = 'postgresql://postgres.abc:senha@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&schema=aagb'
+    // O Prisma 6 trata verify-ca, verify-full e maiúsculas como "prefer": pode cair para conexão sem criptografia.
+    expect(() => loadConfig({ ...prod, DATABASE_URL: `${base}&sslmode=verify-full` })).toThrow(/sslmode/)
+    expect(() => loadConfig({ ...prod, DATABASE_URL: `${base}&sslmode=REQUIRE` })).toThrow(/sslmode/)
+    // O Prisma usa o último valor repetido; a checagem não pode olhar só o primeiro.
+    expect(() => loadConfig({ ...prod, DATABASE_URL: `${base}&sslmode=require&sslmode=disable` })).toThrow(/repetido/)
+    expect(() => loadConfig({ ...prod, DATABASE_URL: `${base}&schema=public&sslmode=require` })).toThrow(/repetido/)
+  })
+
+  it('em produção recusa endereço que não dá para ler e confere também o DIRECT_URL', () => {
+    const prod = { ...valid, NODE_ENV: 'production' }
+    const ok = 'postgresql://postgres.abc:senha@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&schema=aagb&sslmode=require'
+    expect(() => loadConfig({ ...prod, DATABASE_URL: 'postgresql://u:p@host:porta/db?schema=aagb&sslmode=require' })).toThrow(/DATABASE_URL/)
+    expect(() => loadConfig({ ...prod, DATABASE_URL: ok, DIRECT_URL: 'postgresql://u:p@host:5432/postgres?schema=aagb' })).toThrow(/DIRECT_URL/)
+    expect(loadConfig({ ...prod, DATABASE_URL: ok, DIRECT_URL: ok.replace(':6543', ':5432').replace('pgbouncer=true&', '') }).NODE_ENV).toBe('production')
+  })
 })
