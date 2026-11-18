@@ -8,7 +8,8 @@ Implementa o contrato `Api` do front (`apps/web/src/services/api.ts`) e valida o
 ```bash
 npm install                                  # também gera o client do Prisma
 cp apps/api/.env.example apps/api/.env       # preencha JWT_SECRET
-npm run db:push -w apps/api                  # cria as tabelas
+npm run db:local -w apps/api                 # Postgres local; deixe aberto e use outro terminal
+npm run db:migrate -w apps/api               # cria as tabelas (aplica prisma/migrations)
 npm run db:seed -w apps/api                  # dados de exemplo (não são dados reais); com SEED_ADMIN_* no .env, cria uma conta de teste do painel
 npm run user:create -w apps/api -- --email voce@exemplo.org --name "Seu Nome"
 npm run dev:api                              # http://localhost:3333
@@ -21,7 +22,11 @@ Para o front usar a API, crie `apps/web/.env.local` com `VITE_API_URL=http://loc
 | Comando | Para quê |
 | --- | --- |
 | `npm run dev -w apps/api` | servidor com recarga automática |
-| `npm test -w apps/api` | testes de integração (cada arquivo usa um banco SQLite descartável) |
+| `npm test -w apps/api` | testes de integração num Postgres 17 temporário (cada arquivo usa um banco descartável) |
+| `npm run db:local -w apps/api` | Postgres local para desenvolvimento (dados em `.pgdata`) |
+| `npm run db:migrate -w apps/api` | aplica as migrações (desenvolvimento e produção) |
+| `npm run db:migrate:dev -w apps/api` | cria uma migração nova depois de mudar `schema.prisma` |
+| `npm run db:reset -w apps/api` | apaga o banco local, reaplica as migrações e os dados de exemplo |
 | `npm run typecheck -w apps/api` / `npm run lint -w apps/api` | tipos e lint |
 | `npm run build -w apps/api` | gera `dist/server.js` e `dist/create-user.js` com esbuild |
 | `npm start -w apps/api` | roda o build |
@@ -67,7 +72,9 @@ Erros: `{ "message": "texto em português", "fields"?: { "campo": "erro" } }` co
 
 ## Produção
 
-- **Banco**: troque `provider` para `"postgresql"` em `prisma/schema.prisma`, aponte `DATABASE_URL` para o Postgres e use `prisma migrate deploy` (gere as migrações com `prisma migrate dev` antes do primeiro deploy).
+- **Banco**: Postgres no Supabase, passo a passo em [`docs/supabase.md`](../../docs/supabase.md).
+  - `DATABASE_URL` (pooler, porta 6543, `pgbouncer=true`) e `DIRECT_URL` (porta 5432, só migrações), ambos com `schema=aagb&sslmode=require`; a API recusa subir sem isso;
+  - rode `npm run db:migrate -w apps/api` antes de subir cada versão nova.
 - **HTTPS** obrigatório (`COOKIE_SECURE=true`). Atrás de proxy, `TRUST_PROXY=1` (o número de proxies à frente da API); nunca `true`, que aceitaria qualquer `X-Forwarded-For` e anularia o limite por IP.
 - **Mesmo site**: os cookies são `SameSite=Strict`, então o front e a API precisam estar no mesmo site (ex.: `aagb.org.br` e `api.aagb.org.br`).
 - **`UPLOAD_DIR`** precisa estar num disco persistente, com backup junto com o banco.
@@ -77,6 +84,7 @@ Erros: `{ "message": "texto em português", "fields"?: { "campo": "erro" } }` co
 
 - `package-lock.json` versionado; rode `npm audit` antes de cada deploy.
 - Scripts de instalação ficam bloqueados por padrão (npm 12). Os aprovados estão em `allowScripts` no `package.json` da raiz, presos à versão: atualizar `bcrypt`, `prisma`, `@prisma/client`, `@prisma/engines` ou `esbuild` exige aprovar de novo (`npm install-scripts approve <pacote>`).
+- `embedded-postgres` (Postgres dos testes e do desenvolvimento) fica fixo em `17.11.0-beta.19`, a mesma versão 17 de Postgres usada pelo Supabase; "beta" é do empacotamento, não do Postgres. O script de instalação dele não faz nada no Windows e não foi aprovado.
 - Situação em 03/11/2026: os 3 avisos altos da CLI do Prisma 6 (`deepmerge-ts` < 8, estouro de pilha ao mesclar objetos recursivos) foram resolvidos com `overrides` no `package.json` da raiz, que força `deepmerge-ts@8.0.2`. Ao migrar para o Prisma 7, remova esse override. Restam 12 avisos moderados (`minimatch` < 11.0.1, negação de serviço por amplificação de globs) vindos do ESLint, do `typescript-eslint` e do `eslint-plugin-jsx-a11y`: ferramentas só de desenvolvimento, que não entram em `dist/` nem recebem dados de usuários.
   - Não há correção sem quebrar: em 04/11/2026 o ESLint mais novo (10.14) ainda depende de `minimatch@^10`, e o `jsx-a11y` 6.10.2 de `minimatch@^3`. Um `overrides` forçando `minimatch@11.0.4` zera o `npm audit`, mas o ESLint para de rodar (a API do `minimatch` 11 mudou). Foi testado e revertido. Não use `npm audit fix --force` nem esse override.
   - Revisar quando o ESLint e o `jsx-a11y` lançarem versões que dependam de `minimatch` >= 11.0.1.
