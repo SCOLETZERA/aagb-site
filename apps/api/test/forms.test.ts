@@ -146,3 +146,19 @@ describe('limite de envios', () => {
     expect((await send(behindProxy, '10.0.0.2')).statusCode).toBe(429)
   })
 })
+
+describe('caractere nulo', () => {
+  // O Postgres não guarda o caractere nulo (U+0000) em texto; sem a checagem, o pedido virava erro 500.
+  it('é recusado com 400 em qualquer campo de texto, sem gravar nada', async () => {
+    const before = await app.prisma.order.count()
+    const res = await order([{ productId: 'alface-crespa', quantity: 1 }], { name: 'Maria\u0000das Dores' })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().message).toBe('Os dados enviados têm caracteres inválidos.')
+    expect(await app.prisma.order.count()).toBe(before)
+  })
+
+  it('o texto "\\u0000" digitado (barra, u, zeros) não é confundido com o caractere nulo', async () => {
+    const res = await order([{ productId: 'alface-crespa', quantity: 1 }], { name: 'Maria \\u0000 das Dores' })
+    expect(res.statusCode).toBe(201)
+  })
+})

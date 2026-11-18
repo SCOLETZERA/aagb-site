@@ -29,15 +29,15 @@ Partes:
 npm install                      # também gera o client do Prisma
 npm run lint                     # API + web
 npm run typecheck                # shared + API + web
-npm test                         # API (78 testes) + web (52 testes)
+npm test                         # API (92 testes, num Postgres temporário) + web (52 testes)
 npm run build                    # API (esbuild) + web (Vite)
 ```
 
 ### Rodar localmente
 
 1. Copie `apps/api/.env.example` para `apps/api/.env` e preencha `JWT_SECRET`. Para ter uma conta de teste do painel, preencha também `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD`. Cada worktree novo começa **sem** `.env`.
-2. Prepare o banco: `npm run db:push -w apps/api` e depois `npm run db:seed -w apps/api`.
-   **Ao atualizar o código**, rode `npm run db:push -w apps/api` de novo antes de subir a API: ainda não há migrações, e a coluna `Session.confirmedAt` (17/11/2026) precisa existir, senão o login e o painel inteiro param.
+2. O banco é Postgres (desde 17/11/2026; antes era SQLite). Num terminal, `npm run db:local -w apps/api` sobe um Postgres local sem instalar nada (deixe aberto). Em outro: `npm run db:migrate -w apps/api` e `npm run db:seed -w apps/api`.
+   **Ao atualizar o código**, rode `npm run db:migrate -w apps/api` antes de subir a API. Produção no Supabase: `docs/supabase.md`.
 3. Suba a API: `npm run dev:api` (http://localhost:3333).
 4. Para o site usar a API, crie `apps/web/.env.local` com `VITE_API_URL=http://localhost:3333`. Sem isso, o site usa os dados de exemplo.
 5. Suba o site: `npm run dev:web` (http://localhost:5173).
@@ -48,7 +48,8 @@ npm run build                    # API (esbuild) + web (Vite)
 ```
 packages/shared/src/   forms.ts (schemas Zod dos formulários), domain.ts (tipos), catalog.ts (categorias, status, ícones), sample-data.ts
 apps/api/
-  prisma/              schema.prisma (SQLite; produção: trocar provider para postgresql), seed.ts, seed-data.ts
+  prisma/              schema.prisma (Postgres, esquema "aagb"), migrations/, seed.ts, seed-data.ts
+  scripts/local-postgres.ts   Postgres local para desenvolvimento (npm run db:local)
   scripts/create-user.ts   cria/redefine conta do painel (senha digitada oculta)
   src/config.ts        env validado com Zod (falha ao iniciar se inválido)
   src/app.ts           buildApp(config): monta plugins e rotas; logger sem IP, cabeçalhos, query nem corpo
@@ -57,7 +58,7 @@ apps/api/
   src/plugins/auth.ts      JWT em cookie, requireAdmin(), cookies
   src/services/        auth.ts (login, refresh, bloqueio), orders.ts (pedido e status/estoque), documents.ts (PDF), retention.ts (LGPD), audit.ts
   src/routes/          public.ts, forms.ts, documents.ts (download), admin/{auth,inbox,content,documents,users,reports}.ts
-  test/                integração com app.inject; cada arquivo usa uma cópia de um banco SQLite modelo
+  test/                integração com app.inject; global-setup sobe um Postgres 17 temporário (embedded-postgres) e cada arquivo usa uma cópia de um banco-modelo
 apps/web/src/
   services/            api.ts (interface Api + ApiError), httpApi.ts (API real), mock/ (dados de exemplo)
   features/admin/      painel: adminClient.ts (fetch com cookies e refresh único), AdminAuth.tsx, AdminApp.tsx, pages/*
@@ -117,6 +118,15 @@ apps/web/src/
 - As respostas seguem `{ message, fields? }` em português. Campos ausentes ou de tipo errado viram "Campo obrigatório." / "Valor em formato inválido." (`lib/zod-messages.ts`), sem termos técnicos do Zod.
 - Erro 500 devolve mensagem genérica. O log guarda só nome, código e as linhas `at` da pilha, porque a mensagem de erro do Prisma pode conter nome e telefone.
 
+**Banco e Supabase** (`prisma/schema.prisma`, `prisma/migrations`, `src/config.ts`, `docs/supabase.md`)
+- Postgres com migrações. As tabelas ficam no esquema `aagb`, nunca no `public`, que a Data API do Supabase pode expor com a chave pública.
+- A migração inicial recusa o `public` quando existe o papel `anon`, tira de `anon`/`authenticated` o acesso ao esquema e às tabelas, e liga RLS sem políticas em todas as tabelas. A API conecta como dona das tabelas e não é afetada.
+- Em produção, `config.ts` exige em `DATABASE_URL` e `DIRECT_URL`: `schema=` próprio, `sslmode=require` exato (o Prisma 6 trata `verify-full` como `prefer`) e nenhum parâmetro repetido (o Prisma usa o último).
+- `db:reset`, `db:seed` e `db:migrate:dev` passam por `scripts/local-only.ts` e só rodam contra `localhost`/`127.0.0.1`. O próprio Prisma também recusa `migrate reset` quando chamado por um assistente de IA, sem consentimento explícito.
+- O caractere nulo (U+0000) num corpo JSON é recusado com 400 (`plugins/security.ts`); o Postgres não o aceita em texto.
+- Migração nova que cria tabela: acrescente `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` (o esquema já é fechado, mas o RLS é a segunda barreira).
+- `test/supabase.test.ts` imita o pior caso do Supabase (papéis públicos com acesso padrão a tudo) e confere que eles não leem nem alteram nada.
+
 **LGPD** (`services/retention.ts`, `server.ts`)
 - Dados pessoais de pedidos, solicitações e ofertas são anonimizados depois de `PERSONAL_DATA_RETENTION_DAYS` (365), ao iniciar e a cada 24 h.
 - Sessões vencidas ou revogadas há mais de 30 dias são apagadas.
@@ -138,7 +148,8 @@ apps/web/src/
 - **`npm audit`:** os 3 avisos altos (deepmerge-ts da CLI do Prisma 6) foram resolvidos com `overrides` no `package.json` da raiz; remova o override ao migrar para o Prisma 7. Restam 12 avisos moderados no ESLint (minimatch), só de desenvolvimento. **Não use `npm audit fix --force`.**
 - **Testado no navegador:** login, resumo, mudança de status de pedido, cadastro de notícia e layout no celular.
 - **Não testado pela interface:** upload de PDF e a regra nova de estoque. As duas só têm testes automáticos.
-- **Não testado:** Postgres e qualquer ambiente de produção.
+- **Postgres (17/11/2026):** toda a suíte da API roda num Postgres 17 de verdade. No navegador, contra o Postgres local: login, pedido pela vitrine e conclusão do pedido com baixa de estoque.
+- **Não testado:** um projeto Supabase de verdade e qualquer ambiente de produção.
 
 ## 6. Skills de revisão instaladas
 
@@ -154,7 +165,7 @@ Também existe `/security-review`, que precisa do remoto `origin`.
 - **Faltam do plano original:** gestão de sócios, produção para feiras e relatórios além do resumo.
 - **Faltam para publicar:**
   - hospedagem (indefinida);
-  - Postgres com migrações;
+  - criar o projeto no Supabase e aplicar as migrações (o código está pronto: `docs/supabase.md`);
   - domínio e HTTPS;
   - CSP e fallback para `index.html` no servidor do front;
   - disco persistente para `UPLOAD_DIR`, com backup;

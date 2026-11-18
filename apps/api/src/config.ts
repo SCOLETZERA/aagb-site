@@ -1,5 +1,27 @@
 import { z } from 'zod'
 
+/**
+ * Regras do endereço do banco em produção (Supabase):
+ * - esquema próprio, porque o "public" pode ficar exposto pela Data API com a chave pública;
+ * - sslmode=require exato: o Prisma 6 trata verify-ca, verify-full e variações de maiúsculas como
+ *   "prefer", que aceita conexão sem criptografia;
+ * - sem parâmetros repetidos: o Prisma usa o último valor, e um segundo sslmode=disable passaria.
+ */
+export function productionDatabaseUrlProblems(url: string): string[] {
+  if (!URL.canParse(url)) return ['Endereço do banco inválido.']
+  const params = new URL(url).searchParams
+  const problems: string[] = []
+  for (const name of ['schema', 'sslmode', 'pgbouncer']) {
+    if (params.getAll(name).length > 1) problems.push(`Parâmetro ${name} repetido no endereço do banco.`)
+  }
+  const schema = params.get('schema')
+  if (!schema || schema === 'public') problems.push('Em produção use um esquema próprio: acrescente schema=aagb ao endereço.')
+  if (params.get('sslmode') !== 'require') {
+    problems.push('Em produção a conexão com o banco precisa ser criptografada: use sslmode=require no endereço.')
+  }
+  return problems
+}
+
 const bool = z
   .enum(['true', 'false', '1', '0'])
   .transform((v) => v === 'true' || v === '1')
@@ -10,7 +32,14 @@ const envSchema = z
     HOST: z.string().default('127.0.0.1'),
     PORT: z.coerce.number().int().min(1).max(65535).default(3333),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-    DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatória.'),
+    DATABASE_URL: z
+      .string('DATABASE_URL é obrigatória.')
+      .regex(/^postgres(ql)?:\/\//, 'DATABASE_URL precisa ser um endereço de Postgres (postgresql://...).'),
+    // Usada só pelas migrações (Prisma CLI); conferida aqui para ter as mesmas regras em produção.
+    DIRECT_URL: z
+      .string()
+      .regex(/^postgres(ql)?:\/\//, 'DIRECT_URL precisa ser um endereço de Postgres (postgresql://...).')
+      .optional(),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET precisa ter pelo menos 32 caracteres.'),
     CORS_ORIGINS: z
       .string()
@@ -39,6 +68,12 @@ const envSchema = z
     }
     if (env.NODE_ENV === 'production' && !env.COOKIE_SECURE) {
       ctx.addIssue({ code: 'custom', path: ['COOKIE_SECURE'], message: 'Em produção os cookies precisam ser Secure.' })
+    }
+    if (env.NODE_ENV === 'production') {
+      for (const key of ['DATABASE_URL', 'DIRECT_URL'] as const) {
+        const value = env[key]
+        if (value) for (const message of productionDatabaseUrlProblems(value)) ctx.addIssue({ code: 'custom', path: [key], message })
+      }
     }
   })
 

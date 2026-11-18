@@ -1,17 +1,20 @@
-// Esquema do banco da AAGB.
+// Esquema do banco da AAGB (Postgres: Supabase em produção; Postgres local em desenvolvimento e testes).
 //
-// Desenvolvimento e testes usam SQLite. Em produção, troque `provider` para "postgresql"
-// e aponte DATABASE_URL para o Postgres. Por compatibilidade com o SQLite:
-//   - listas (`body`) ficam como texto JSON;
-//   - valores fixos (status, papéis, categorias) ficam como texto e são validados com Zod na API.
+// - DATABASE_URL: conexão usada pela API. No Supabase, o pooler (porta 6543) com pgbouncer=true.
+// - DIRECT_URL: conexão usada pelas migrações (porta 5432). Em desenvolvimento, igual à DATABASE_URL.
+// - As tabelas ficam num esquema próprio (schema=aagb no endereço), fora do "public" que o Supabase
+//   pode expor pela Data API. A primeira migração fecha esse esquema para os papéis públicos.
+// - Listas (`body`) ficam como texto JSON e valores fixos (status, categorias) como texto validado com
+//   Zod na API, herança do SQLite usado antes; funcionam igual no Postgres.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------- Conteúdo público ----------
