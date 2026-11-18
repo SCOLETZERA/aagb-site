@@ -74,7 +74,7 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     const fetchMock = fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativars*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
 
     const dialog = await confirmDialog()
     await user.type(within(dialog).getByLabelText('Sua senha'), 'senha-certa-123')
@@ -89,7 +89,7 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     const fetchMock = fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativars*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
 
     const dialog = await confirmDialog()
     await user.type(within(dialog).getByLabelText('Sua senha'), 'senha-errada')
@@ -104,7 +104,7 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     const fetchMock = fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativars*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
 
     const dialog = await confirmDialog()
     await user.click(within(dialog).getByRole('button', { name: 'Fechar' }))
@@ -117,13 +117,13 @@ describe('contas: confirmação de senha', () => {
     const user = userEvent.setup()
     fakeApi()
     renderAccounts()
-    await user.click(await screen.findByRole('button', { name: /desativars*joão lima/i }, { timeout: 3000 }))
+    await user.click(await screen.findByRole('button', { name: /desativar\s*joão lima/i }, { timeout: 3000 }))
     const dialog = await confirmDialog()
     await user.type(within(dialog).getByLabelText('Sua senha'), 'senha-certa-123')
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar' }))
     expect(await screen.findByText('Conta desativada.')).toBeInTheDocument()
 
-    await user.click(await screen.findByRole('button', { name: /reativars*joão lima/i }))
+    await user.click(await screen.findByRole('button', { name: /reativar\s*joão lima/i }))
     expect(await screen.findByText('Conta reativada.')).toBeInTheDocument()
     expect(screen.queryByRole('dialog', { name: 'Confirme sua senha' })).not.toBeInTheDocument()
   })

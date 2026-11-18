@@ -37,6 +37,7 @@ npm run build                    # API (esbuild) + web (Vite)
 
 1. Copie `apps/api/.env.example` para `apps/api/.env` e preencha `JWT_SECRET`. Para ter uma conta de teste do painel, preencha também `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD`. Cada worktree novo começa **sem** `.env`.
 2. Prepare o banco: `npm run db:push -w apps/api` e depois `npm run db:seed -w apps/api`.
+   **Ao atualizar o código**, rode `npm run db:push -w apps/api` de novo antes de subir a API: ainda não há migrações, e a coluna `Session.confirmedAt` (17/11/2026) precisa existir, senão o login e o painel inteiro param.
 3. Suba a API: `npm run dev:api` (http://localhost:3333).
 4. Para o site usar a API, crie `apps/web/.env.local` com `VITE_API_URL=http://localhost:3333`. Sem isso, o site usa os dados de exemplo.
 5. Suba o site: `npm run dev:web` (http://localhost:5173).
