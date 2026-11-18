@@ -36,16 +36,16 @@ Públicas (sem login):
 
 Painel (`/api/admin`, cookie de sessão):
 
-Todas as contas do painel são administradoras: quem entra faz tudo, sem separação de papéis. Cada rota abaixo só exige login.
+Todas as contas do painel são administradoras: quem entra faz tudo, sem separação de papéis. Cada rota abaixo exige login (um teste garante isso para toda rota nova). Criar, alterar e trocar senha de contas exigem também a senha confirmada há até 5 minutos naquele login (`POST auth/confirm`); sem isso, a resposta é 403 com `code: "confirm_password"`.
 
 | Rota |
 | --- |
-| `POST auth/login`, `POST auth/refresh`, `POST auth/logout`, `GET auth/me` |
+| `POST auth/login`, `POST auth/refresh`, `POST auth/logout`, `GET auth/me`, `POST auth/confirm` (`{ password }`) |
 | `GET/PATCH orders`, `service-requests`, `donation-offers` (+ `POST :id/anonymize`) |
 | `GET/POST/PUT/DELETE content/{news,projects,partners,products,services,needs,donations}` |
 | `POST documents` (multipart: `title`, `category`, `publishedAt` e depois `file`), `DELETE documents/:id` |
 | `GET reports/summary`, `GET audit` |
-| `GET/POST/PATCH users`, `PUT users/:id/password` |
+| `GET users`; `POST users`, `PATCH users/:id` e `PUT users/:id/password` com confirmação recente |
 
 Contas antigas que ainda tenham o papel "diretoria" no banco entram como administradoras; o campo `role` não é mais consultado.
 

@@ -29,7 +29,7 @@ Partes:
 npm install                      # também gera o client do Prisma
 npm run lint                     # API + web
 npm run typecheck                # shared + API + web
-npm test                         # API (63 testes) + web (45 testes)
+npm test                         # API (74 testes) + web (49 testes)
 npm run build                    # API (esbuild) + web (Vite)
 ```
 
@@ -79,8 +79,14 @@ apps/web/src/
 **Autorização** (mudou no PR #3, `feat/painel-unico-admin`)
 - **Existe um único papel.** Toda conta ativa do painel é administradora e acessa tudo: caixa de entrada, conteúdo, documentos, relatório, contas e auditoria. A separação entre `admin` e `diretoria`, que existia antes, foi removida a pedido do usuário.
 - A coluna `role` continua no banco, sempre gravada como `"admin"`, mas **não é consultada**. Contas antigas com `"diretoria"` entram como administradoras.
-- Login, `/me` e a lista de contas não devolvem papel. A única proteção de autoconta é: ninguém desativa a própria conta.
-- Cada grupo de rotas é registrado com `app.register` próprio e coloca `requireAdmin()` como hook do grupo. **Não use `fastify-plugin` nesses grupos**: isso vazaria o hook para outros grupos. Rotas sem login no prefixo `/api/admin`: só `auth/login`, `auth/refresh` e `auth/logout`.
+- Login, `/me` e a lista de contas não devolvem papel. Ninguém desativa a própria conta.
+- **Confirmação de senha** (17/11/2026, depois da revisão do papel único):
+  - criar conta, alterar conta e trocar senha (`POST /users`, `PATCH /users/:id`, `PUT /users/:id/password`) exigem que a senha tenha sido confirmada **há no máximo 5 minutos naquele login**;
+  - a confirmação é feita em `POST /api/admin/auth/confirm` e fica em `Session.confirmedAt`; a renovação do token mantém o valor, mas outro login da mesma pessoa não aproveita a confirmação;
+  - sem confirmação recente, a resposta é 403 com `code: "confirm_password"`, e o painel abre a janela "Confirme sua senha" (`useConfirmPassword.tsx`) e repete a ação;
+  - senha errada na confirmação conta para o mesmo bloqueio do login e responde 403, nunca 401 (com 401, o painel tentaria renovar a sessão e deslogaria a pessoa);
+  - objetivo: uma sessão roubada, sozinha, não basta para trocar a senha dos outros nem criar uma conta própria.
+- Cada grupo de rotas é registrado com `app.register` próprio e coloca `requireAdmin()` como hook do grupo. O teste `test/admin-routes.test.ts` percorre **todas** as rotas registradas sob `/api/admin` e falha se alguma, fora login/refresh/logout, responder sem login. **Não use `fastify-plugin` nesses grupos**: isso vazaria o hook para outros grupos. Rotas sem login no prefixo `/api/admin`: só `auth/login`, `auth/refresh` e `auth/logout`.
 - Se a próxima tarefa reintroduzir papéis ou permissões finas, siga o padrão anterior: checagem no servidor em cada grupo de rotas, papel relido do banco (nunca do token) e testes de 403 por papel.
 
 **CSRF e rede** (`plugins/security.ts`)
@@ -121,7 +127,12 @@ apps/web/src/
 ## 5. Revisões e verificação já feitas
 
 - **Revisão manual:** corrigiu 6 falhas (commit `eb27c14`): desvio do CSRF por URL codificada, contador de falhas não atômico, dados pessoais em log, imagem `//host`, `TRUST_PROXY=true`, campos sem limite de tamanho. Cada uma tem teste de regressão; os de CSRF e de login foram conferidos falhando sem a correção.
-- **`/security-review` na branch inteira:** nenhuma vulnerabilidade com confiança ≥ 0,8. Essa revisão foi **antes** dos PRs #1 a #3; a troca para papel único (PR #3) ainda não passou por revisão de segurança.
+- **`/security-review` na branch inteira:** nenhuma vulnerabilidade com confiança ≥ 0,8. Essa revisão foi **antes** dos PRs #1 a #3.
+- **Revisão do papel único (PR #3), 17/11/2026:**
+  - não achou falha no código: as 46 rotas do painel recusam acesso sem login e um papel enviado no corpo é ignorado;
+  - riscos de projeto apontados: contas antigas de "diretoria" ganharam poder total; qualquer conta podia trocar a senha de outra e criar contas sem confirmação; `reports.ts` exigia login rota por rota;
+  - resposta: confirmação de senha nas ações sobre contas e teste fixo de login em todas as rotas (seção 4);
+  - antes de publicar, confira quem tem conta no painel.
 - **`npm audit`:** os 3 avisos altos (deepmerge-ts da CLI do Prisma 6) foram resolvidos com `overrides` no `package.json` da raiz; remova o override ao migrar para o Prisma 7. Restam 12 avisos moderados no ESLint (minimatch), só de desenvolvimento. **Não use `npm audit fix --force`.**
 - **Testado no navegador:** login, resumo, mudança de status de pedido, cadastro de notícia e layout no celular.
 - **Não testado pela interface:** upload de PDF e a regra nova de estoque. As duas só têm testes automáticos.
