@@ -1,24 +1,49 @@
 import { createHmac, randomUUID } from 'node:crypto'
-import { copyFileSync } from 'node:fs'
 import path from 'node:path'
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify'
-import { afterAll } from 'vitest'
+import { PrismaClient } from '@prisma/client'
+import { afterAll, inject } from 'vitest'
 import { buildApp, type BuildOptions } from '../src/app.js'
 import { loadConfig } from '../src/config.js'
-import { TEMPLATE_DB, TMP_DIR } from './paths.js'
+import { DB_SCHEMA, TEMPLATE_DB, TMP_DIR } from './paths.js'
 
 export const ORIGIN = 'http://localhost:5173'
 export const JWT_SECRET = 'segredo-de-teste-com-mais-de-32-caracteres'
 export const PASSWORD = 'senha-forte-de-teste'
 
-/** App com banco próprio (cópia do modelo já populado). Fechado automaticamente no fim do arquivo. */
+/**
+ * Cria um banco novo para o arquivo de teste, copiado do banco-modelo (já migrado e com dados de exemplo).
+ * Vários arquivos rodam em paralelo; se o modelo estiver ocupado por outra cópia, tenta de novo.
+ */
+export async function createTestDatabase(): Promise<{ url: string; drop(): Promise<void> }> {
+  const server = inject('pgServerUrl')
+  const name = `teste_${randomUUID().replaceAll('-', '')}`
+  const admin = new PrismaClient({ datasourceUrl: `${server}/postgres` })
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await admin.$executeRawUnsafe(`CREATE DATABASE ${name} TEMPLATE ${TEMPLATE_DB}`)
+      break
+    } catch (error) {
+      if (attempt >= 50 || !String(error).includes('is being accessed by other users')) throw error
+      await new Promise((r) => setTimeout(r, 100))
+    }
+  }
+  return {
+    url: `${server}/${name}?schema=${DB_SCHEMA}`,
+    async drop() {
+      await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`)
+      await admin.$disconnect()
+    },
+  }
+}
+
+/** App com banco próprio (cópia do modelo já populado). Fechado e apagado automaticamente no fim do arquivo. */
 export async function makeApp(env: Record<string, string> = {}, before?: (app: FastifyInstance) => void, options: BuildOptions = {}) {
   const id = randomUUID()
-  const dbFile = path.join(TMP_DIR, `${id}.db`)
-  copyFileSync(TEMPLATE_DB, dbFile)
+  const db = await createTestDatabase()
   const config = loadConfig({
     NODE_ENV: 'test',
-    DATABASE_URL: `file:${dbFile}`,
+    DATABASE_URL: db.url,
     JWT_SECRET,
     CORS_ORIGINS: ORIGIN,
     COOKIE_SECURE: 'false',
@@ -33,7 +58,10 @@ export async function makeApp(env: Record<string, string> = {}, before?: (app: F
   const app = await buildApp(config, options)
   before?.(app)
   await app.ready()
-  afterAll(() => app.close())
+  afterAll(async () => {
+    await app.close()
+    await db.drop()
+  })
   return app
 }
 

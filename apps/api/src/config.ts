@@ -10,7 +10,9 @@ const envSchema = z
     HOST: z.string().default('127.0.0.1'),
     PORT: z.coerce.number().int().min(1).max(65535).default(3333),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-    DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatória.'),
+    DATABASE_URL: z
+      .string('DATABASE_URL é obrigatória.')
+      .regex(/^postgres(ql)?:\/\//, 'DATABASE_URL precisa ser um endereço de Postgres (postgresql://...).'),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET precisa ter pelo menos 32 caracteres.'),
     CORS_ORIGINS: z
       .string()
@@ -39,6 +41,18 @@ const envSchema = z
     }
     if (env.NODE_ENV === 'production' && !env.COOKIE_SECURE) {
       ctx.addIssue({ code: 'custom', path: ['COOKIE_SECURE'], message: 'Em produção os cookies precisam ser Secure.' })
+    }
+    if (env.NODE_ENV === 'production' && URL.canParse(env.DATABASE_URL)) {
+      const params = new URL(env.DATABASE_URL).searchParams
+      // No Supabase, o esquema "public" pode ficar exposto pela Data API com a chave pública:
+      // as tabelas (com senhas embaralhadas e dados pessoais) ficam num esquema próprio.
+      const schema = params.get('schema')
+      if (!schema || schema === 'public') {
+        ctx.addIssue({ code: 'custom', path: ['DATABASE_URL'], message: 'Em produção use um esquema próprio: acrescente schema=aagb ao endereço.' })
+      }
+      if (!['require', 'verify-ca', 'verify-full'].includes(params.get('sslmode') ?? '')) {
+        ctx.addIssue({ code: 'custom', path: ['DATABASE_URL'], message: 'Em produção a conexão com o banco precisa ser criptografada: acrescente sslmode=require ao endereço.' })
+      }
     }
   })
 
