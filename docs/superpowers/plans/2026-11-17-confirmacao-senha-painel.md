@@ -45,7 +45,7 @@
 
 ---
 
-### Tarefa 1: toda rota do painel exige login
+### Task 1: toda rota do painel exige login
 
 **Arquivos:**
 - Alterar: `apps/api/src/app.ts` (assinatura de `buildApp`)
@@ -71,7 +71,7 @@
 - [ ] **Passo 4: Rodar a suíte.** Rode `npm test -w apps/api`. Esperado: todos passam.
 - [ ] **Passo 5: Commit.** Mensagem: `test(api): garante que toda rota do painel exige login`.
 
-### Tarefa 2: confirmação de senha na API (sessão, rota e bloqueio)
+### Task 2: confirmação de senha na API (sessão, rota e bloqueio)
 
 **Arquivos:**
 - Alterar: `apps/api/prisma/schema.prisma`. Adicionar `Session.confirmedAt DateTime?`, com comentário `///` explicando o campo.
@@ -128,7 +128,7 @@
 - [ ] **Passo 4: Rodar a suíte.** Rode `npx vitest run test/confirm.test.ts` e depois `npm test -w apps/api`. Esperado: todos passam, inclusive os de login e bloqueio em `auth.test.ts`.
 - [ ] **Passo 5: Commit.** Mensagem: `feat(api): rota para confirmar a senha na sessão do painel`.
 
-### Tarefa 3: exigir confirmação recente nas ações sobre contas
+### Task 3: exigir confirmação recente nas ações sobre contas
 
 **Arquivos:**
 - Alterar: `apps/api/src/routes/admin/users.ts`. Adicionar `{ preHandler: requireRecentConfirmation() }` em `POST /users`, `PATCH /users/:id` e `PUT /users/:id/password`.
@@ -158,7 +158,7 @@
 - [ ] **Passo 4: Rodar a suíte.** Rode `npm test -w apps/api`. Esperado: todos passam.
 - [ ] **Passo 5: Commit.** Mensagem: `feat(api): ações sobre contas exigem senha confirmada há até 5 minutos`.
 
-### Tarefa 4: janela "Confirme sua senha" no painel
+### Task 4: janela "Confirme sua senha" no painel
 
 **Arquivos:**
 - Alterar: `apps/web/src/services/api.ts`. `ApiError` ganha `readonly code?: string`, como 4º parâmetro do construtor.
@@ -199,7 +199,7 @@
 - [ ] **Passo 4: Rodar a suíte.** Rode `npm test -w apps/web`. Esperado: todos passam.
 - [ ] **Passo 5: Commit.** Mensagem: `feat(web): painel pede a senha antes de mexer em contas`.
 
-### Tarefa 5: verificação final e documentação
+### Task 5: verificação final e documentação
 
 **Arquivos:**
 - Alterar: `docs/HANDOFF-contexto-projeto.md`.
