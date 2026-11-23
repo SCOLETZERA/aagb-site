@@ -11,3 +11,4 @@ dist
 coverage
 test/.tmp
 uploads
+apps/web/figma-export/
