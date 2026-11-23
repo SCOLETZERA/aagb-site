@@ -81,6 +81,89 @@ GOLD_WORDS = {"tarô", "jogo", "trunfos.", "trionfi.", "visconti-sforza:", "ouro
               "colman", "smith", "1370,", "1440,", "1441,", "1781,", "bembo.", "600", "milão,", "luxo"}
 
 # ----------------------------------------------------------------------------
+# ENGLISH VERSION  (--lang en)
+# ----------------------------------------------------------------------------
+SCENES_EN = [
+    dict(id="intro", pad=0.9,
+         cap="Today, tarot is famous for reading the future. But it began as something else entirely: a luxurious card game, made for Italian nobility.",
+         say="Today... tarot is famous for reading the future. But it began as something else entirely. A luxurious card game... made for Italian nobility."),
+    dict(id="arrival", pad=0.7,
+         cap="Around 1370, playing cards arrived in Europe, carried from the Islamic world, from the Mamluks of Egypt.",
+         say="Around thirteen seventy, playing cards arrived in Europe... carried from the Islamic world. From the Mamluks of Egypt."),
+    dict(id="suits", pad=0.7,
+         cap="They had four suits: cups, coins, swords, and polo sticks, which in Italy became batons.",
+         say="They had four suits. Cups... coins... swords... and polo sticks, which in Italy became batons."),
+    dict(id="milan", pad=0.7,
+         cap="In the 15th century, Milan was ruled by Duke Filippo Maria Visconti. Italian courts adored games, and art.",
+         say="In the fifteenth century, Milan was ruled by Duke Filippo Maria Visconti. Italian courts adored games... and art."),
+    dict(id="trionfi", pad=0.7,
+         cap="Around 1440, someone had an idea: add a series of illustrated cards that could beat all the others. Trumps. In Italian: trionfi.",
+         say="Around fourteen forty, someone had an idea. Add a series of illustrated cards... cards that could beat all the others. Trumps. In Italian... tree-onfee."),
+    dict(id="wedding", pad=0.7,
+         cap="In 1441, Bianca Maria Visconti, the duke's daughter, married Francesco Sforza. The two families became one.",
+         say="In fourteen forty-one, Bianca Maria Visconti, the duke's daughter, married Francesco Sforza. And the two families became one."),
+    dict(id="painting", pad=0.7,
+         cap="For them, the Visconti-Sforza decks were created: painted by hand, with real gold leaf. The work is attributed to the painter Bonifacio Bembo.",
+         say="For them, the Visconti Sforza decks were created. Painted by hand... with real gold leaf. The work is attributed to the painter, Bonifacio Bembo."),
+    dict(id="survivors", pad=0.9,
+         cap="Of the most famous deck, 74 of its 78 cards survive. Today they're divided between New York, Bergamo and a private collection. Two have never been found: the Devil, and the Tower.",
+         say="Of the most famous deck, seventy-four of its seventy-eight cards survive. Today, they're divided between New York, Bergamo, and a private collection. Two have never been found. The Devil... and the Tower."),
+    dict(id="game", pad=0.7,
+         cap="For more than 300 years, tarot was simply that: a game. Tarocchi. A trick-taking game, where trumps defeat every other card.",
+         say="For more than three hundred years, tarot was simply that. A game. Tarockey. A trick-taking game, where trumps defeat every other card."),
+    dict(id="marseille", pad=0.7,
+         cap="The game spread through France and Switzerland. Printed from carved woodblocks, it took on the look we now call the Tarot de Marseille.",
+         say="The game spread through France and Switzerland. Printed from carved woodblocks, it took on the look we now call... the Tarot de Marseille."),
+    dict(id="gebelin", pad=0.9,
+         cap="In 1781, the French scholar Antoine Court de Gébelin declared that tarot was a secret book from ancient Egypt. There was no evidence at all. But the idea stuck.",
+         say="In seventeen eighty-one, the French scholar Antoine Court de Gebelan declared that tarot was a secret book from ancient Egypt. There was no evidence at all. But the idea... stuck."),
+    dict(id="etteilla", pad=0.7,
+         cap="Soon after, a fortune teller called Etteilla created the first tarot deck designed for divination. And the game became an oracle.",
+         say="Soon after, a fortune teller called Etaya created the first tarot deck designed for divination. And the game... became an oracle."),
+    dict(id="levi", pad=0.7,
+         cap="In the 19th century, Éliphas Lévi linked the 22 major arcana to the 22 letters of the Hebrew alphabet. And the Golden Dawn turned tarot into a system of symbols.",
+         say="In the nineteenth century, Eliphas Levy linked the twenty-two major arcana to the twenty-two letters of the Hebrew alphabet. And the Hermetic Order of the Golden Dawn turned tarot into a system of symbols."),
+    dict(id="rws", pad=0.9,
+         cap="In 1909, the artist Pamela Colman Smith illustrated a new deck with Arthur Waite. For the first time, all 78 cards were given full scenes. It became the most used tarot in the world. And for decades, almost no one remembered her name.",
+         say="In nineteen oh nine, the artist Pamela Colman Smith illustrated a new deck, with Arthur Waite. For the first time, all seventy-eight cards were given full scenes. It became the most used tarot in the world. And for decades... almost no one remembered her name."),
+    dict(id="today", pad=0.7,
+         cap="Today, tarot is art. A tool for reflection. A piece of pop culture. And in France and Italy, it's still played as a card game.",
+         say="Today, tarot is art. A tool for reflection. A piece of pop culture. And in France and Italy... it's still played as a card game."),
+    dict(id="outro", pad=2.6,
+         cap="So the next time you see a tarot card, remember: it all began with a game painted in gold, in Milan, nearly 600 years ago.",
+         say="So the next time you see a tarot card... remember. It all began with a game painted in gold, in Milan... nearly six hundred years ago."),
+]
+
+GOLD_WORDS_EN = {"tarot", "game", "game.", "trumps.", "trionfi.", "visconti-sforza", "gold", "gold,", "visconti.", "sforza.",
+                 "devil,", "tower.", "tarocchi.", "marseille.", "egypt.", "oracle.", "hebrew", "1909,", "pamela", "colman",
+                 "smith", "1370,", "1440,", "1441,", "1781,", "bembo.", "600", "milan,", "luxurious", "name.", "art."}
+
+TR_EN = {
+    "Itália": "Italy", "Egito (mamelucos)": "Egypt (Mamluks)", "Taças": "Cups", "Moedas": "Coins", "Espadas": "Swords",
+    "Tacos de polo": "Polo sticks", "Bastões": "Batons", "Milão": "Milan", "= trunfos · c. 1440": "= trumps · c. 1440",
+    "pintado à mão · folha de ouro · c. 1450": "hand-painted · gold leaf · c. 1450",
+    "Bonifacio Bembo (atribuído)": "Bonifacio Bembo (attributed)", "74 de 78": "74 of 78", "Nova York": "New York",
+    "Bérgamo": "Bergamo", "coleção particular": "private collection", "O Diabo": "The Devil", "A Torre": "The Tower",
+    "nunca encontradas": "never found", "TRUNFO VENCE!": "TRUMP WINS!",
+    "um jogo de vazas · séc. XV–XVIII": "a trick-taking game · 15th–18th c.", "Tarô de Marselha": "Tarot de Marseille",
+    "xilogravura · França e Suíça": "woodcut · France & Switzerland", "“É o Livro de Thoth,": "“It's the Book of Thoth,",
+    "do Egito antigo!”": "from ancient Egypt!”", "MITO": "MYTH", "o jogo vira oráculo · 1789": "the game becomes an oracle · 1789",
+    "22 arcanos = 22 letras": "22 arcana = 22 letters", "Éliphas Lévi · Aurora Dourada (1888)": "Éliphas Lévi · Golden Dawn (1888)",
+    "Século XIX": "19th Century", "arte": "art", "reflexão": "reflection", "cultura pop": "pop culture",
+    "jogo de cartas": "card game", "Milão, c. 1450": "Milan, c. 1450", "quase 600 anos de história": "nearly 600 years of history",
+    "A HISTÓRIA DO TARÔ": "THE HISTORY OF TAROT",
+}
+
+LANG = "pt"
+def L(s): return TR_EN.get(s, s) if LANG == "en" else s
+
+def set_lang(lang):
+    global LANG, SCENES, GOLD_WORDS
+    LANG = lang
+    if lang == "en":
+        SCENES = SCENES_EN; GOLD_WORDS = GOLD_WORDS_EN
+
+# ----------------------------------------------------------------------------
 # PALETA E PRIMITIVAS
 # ----------------------------------------------------------------------------
 def C(r, g, b, a=255): return skia.Color(int(r), int(g), int(b), int(max(0, min(255, a))))
@@ -112,6 +195,7 @@ def F(size, family="EB Garamond", bold=True, italic=False):
     f = skia.Font(tf(family, bold, italic), size); f.setEdging(skia.Font.Edging.kAntiAlias); return f
 
 def text_c(c, s, x, y, font, col, a=255, shadow=True):
+    s = L(s)
     w = font.measureText(s)
     if shadow:
         c.drawString(s, x - w/2 + 3, y + 4, font, P((0, 0, 0), a * 0.55, blur=5))
@@ -350,6 +434,7 @@ def card(c, cx, cy, w, style="visconti", m="sun", rot=0.0, flip=1.0, t=0.0, labe
         motif(c, m, w, h, style, t)
         c.restore()
     if label and style in ("marseille", "rws"):
+        label = "ARCANA" if (LANG == "en" and label == "ARCANO") else label
         f = F(w * 0.1, "EB Garamond")
         tw = f.measureText(label)
         c.drawString(label, -tw/2, h/2 - w*0.12, f, P(INK, alpha))
@@ -453,6 +538,7 @@ def castle(c, x, y, s, t, col=(196, 120, 96)):
     c.drawPath(path([(fx, fy - 120*s), (fx + 110*s, fy - 100*s + wv), (fx, fy - 70*s)]), P(BLUE))
 
 def scroll_label(c, x, y, s, a=255, size=58):
+    s = L(s)
     f = F(size, "EB Garamond")
     w = f.measureText(s) + 80
     rr = skia.RRect.MakeRectXY(skia.Rect.MakeXYWH(x - w/2, y - size, w, size * 1.45), 14, 14)
@@ -877,7 +963,7 @@ def draw_caption(c, text, lt, a_out=1.0):
 
 def draw_header(c, t, total):
     f = F(40, "EB Garamond")
-    s = "A HISTÓRIA DO TARÔ"
+    s = L("A HISTÓRIA DO TARÔ")
     w = f.measureText(s)
     c.drawLine(W/2 - w/2 - 80, 128, W/2 - w/2 - 24, 128, P(GOLD, 200, 3))
     c.drawLine(W/2 + w/2 + 24, 128, W/2 + w/2 + 80, 128, P(GOLD, 200, 3))
@@ -888,8 +974,20 @@ def draw_header(c, t, total):
 # ----------------------------------------------------------------------------
 # ÁUDIO
 # ----------------------------------------------------------------------------
+def parse_voice(kok, spec):
+    """'af_heart:0.6,af_nicole:0.4' -> mistura de estilos."""
+    if ":" not in spec and "," not in spec: return spec
+    acc = None
+    for part in spec.split(","):
+        nm, w = (part.split(":") + ["1"])[:2]
+        v = kok.get_voice_style(nm.strip()) * float(w)
+        acc = v if acc is None else acc + v
+    return acc.astype(np.float32)
+
 def tts(kok, text, voice, speed):
-    s, sr = kok.create(text, voice=voice, speed=speed, lang="pt-br")
+    lang = "en-us" if LANG == "en" else "pt-br"
+    pauses = dict(sentence_pause=0.55, clause_pause=0.22) if LANG == "en" else {}
+    s, sr = kok.create(text, voice=parse_voice(kok, voice), speed=speed, lang=lang, **pauses)
     s = np.asarray(s, np.float32)
     x_old = np.arange(len(s)) / sr; x_new = np.arange(int(len(s) * SR / sr)) / SR
     a = np.interp(x_new, x_old, s).astype(np.float32)
@@ -957,6 +1055,72 @@ def sfx_thud(vol=0.4):
     f = 70 + 60 * np.exp(-t * 25)
     return (np.sin(np.cumsum(2 * np.pi * f / SR)) * np.exp(-t * 10) * vol).astype(np.float32)
 
+# ---- cadeia "ASMR": voz próxima, quente e macia --------------------------------
+def spectral(x, gain_fn):
+    n = len(x); N = 1 << (n - 1).bit_length()
+    X = np.fft.rfft(x, N); f = np.fft.rfftfreq(N, 1 / SR)
+    return np.fft.irfft(X * gain_fn(f), N)[:n].astype(np.float32)
+
+def db(g): return 10 ** (g / 20)
+
+def smooth_env(x, ms):
+    k = max(1, int(SR * ms / 1000))
+    return np.sqrt(np.convolve(x * x, np.ones(k) / k, "same") + 1e-10).astype(np.float32)
+
+def asmr_voice(a):
+    # EQ: corta graves inúteis, aquece (efeito de proximidade), suaviza agudos e "chiados"
+    def eq(f):
+        hp = 1 / np.sqrt(1 + (60 / np.maximum(f, 1)) ** 4)
+        warm = 1 + (db(4.0) - 1) / (1 + (f / 260) ** 2)
+        soft = 1 / np.sqrt(1 + (f / 7500) ** 4)
+        dip = 1 - (1 - db(-3.0)) * np.exp(-((f - 3800) / 1600) ** 2)
+        return hp * warm * soft * dip
+    a = spectral(a, eq)
+    # de-esser dinâmico (4,5–9 kHz)
+    band = spectral(a, lambda f: ((f > 4500) & (f < 9500)).astype(np.float32))
+    rest = a - band
+    eb = smooth_env(band, 6); er = smooth_env(rest, 20)
+    ratio = eb / (er + 1e-4)
+    g = np.clip(0.35 / (ratio + 1e-6), 0.25, 1.0) ** 0.8
+    a = rest + band * lfilter1(g, 0.995)
+    # compressão suave (nível íntimo e constante)
+    env = smooth_env(a, 40)
+    thr = np.percentile(env[env > 1e-3], 60) if np.any(env > 1e-3) else 0.1
+    gain = np.where(env > thr, (env / thr) ** -0.45, 1.0).astype(np.float32)
+    a = a * lfilter1(gain, 0.999)
+    a = a / (np.abs(a).max() + 1e-6) * 0.85
+    return a
+
+def sfx_crackle(total, vol=0.035, seed=1):
+    """Ambiente de vela/lareira bem baixinho (gatilho ASMR)."""
+    n = int(total * SR); rng = np.random.default_rng(seed)
+    o = (lfilter1(rng.standard_normal(n).astype(np.float32), 0.997) * 0.9)  # 'room tone' marrom
+    o = o / (np.abs(o).max() + 1e-6) * 0.25
+    pops = rng.integers(0, n - 2000, int(total * 2.2))
+    click = np.exp(-np.arange(600) / 60).astype(np.float32)
+    for i in pops:
+        c = click * rng.standard_normal(600).astype(np.float32) * rng.uniform(0.2, 1.0)
+        o[i:i + 600] += c
+    o = spectral(o, lambda f: 1 / np.sqrt(1 + (f / 5000) ** 2))
+    return o / (np.abs(o).max() + 1e-6) * vol
+
+def sfx_card_slide(vol=0.16, seed=0, dur=0.45):
+    n = int(dur * SR); t = np.arange(n) / SR
+    r = np.random.default_rng(seed).standard_normal(n).astype(np.float32)
+    r = r - lfilter1(r, 0.55)
+    env = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 1.5
+    tap = np.zeros(n, np.float32); k = min(n, 900)
+    tap[-k:] += np.random.default_rng(seed + 7).standard_normal(k).astype(np.float32) * np.exp(-np.arange(k) / 120) * 2.5
+    return (r * env + tap) * vol * 0.5
+
+def sfx_shuffle(vol=0.14, seed=3):
+    o = np.zeros(int(1.6 * SR), np.float32)
+    rng = np.random.default_rng(seed)
+    for i in range(26):
+        c = sfx_card_slide(1.0, seed + i, 0.05)
+        s = int((0.05 + i * 0.05 + rng.uniform(0, 0.01)) * SR); o[s:s + len(c)] += c[:len(o) - s]
+    return o * vol
+
 # ----------------------------------------------------------------------------
 # PIPELINE
 # ----------------------------------------------------------------------------
@@ -973,13 +1137,15 @@ def split_caps(text):
         if (w[-1] in ".:?!" and len(s) > 20) or len(s) > 70:
             out.append(s); cur = []
     if cur: out.append(" ".join(cur))
+    if len(out) > 1 and len(out[-1]) < 22:
+        last = out.pop(); out[-1] = out[-1] + " " + last
     return out
 
 def build(kok, voice, speed, cache_dir):
     import hashlib
     t = 0.0; tl = []
     for sc in SCENES:
-        key = hashlib.md5(f"{voice}|{speed}|{sc['say']}".encode()).hexdigest()[:12]
+        key = hashlib.md5(f"{LANG}|{voice}|{speed}|{sc['say']}".encode()).hexdigest()[:12]
         cp = os.path.join(cache_dir, f"vo_{key}.npy")
         if os.path.exists(cp): a = np.load(cp)
         else:
@@ -1055,7 +1221,10 @@ def main():
     ap.add_argument("--voice", default="pf_dora"); ap.add_argument("--speed", type=float, default=0.9)
     ap.add_argument("--out", default="out"); ap.add_argument("--workers", type=int, default=os.cpu_count() or 4)
     ap.add_argument("--preview", type=float, nargs="*")
+    ap.add_argument("--lang", default="pt", choices=["pt", "en"])
+    ap.add_argument("--asmr", action="store_true", help="voz íntima e mix mais suave")
     a = ap.parse_args()
+    set_lang(a.lang)
     from kokoro_onnx import Kokoro
     os.makedirs(a.out, exist_ok=True); tmp = os.path.join(a.out, "_tmp"); os.makedirs(tmp, exist_ok=True)
     print("» narração...")
@@ -1074,8 +1243,14 @@ def main():
     n = int(total * SR) + SR
     vo = np.zeros(n, np.float32); fx = np.zeros(n, np.float32)
     for s in tl: add(vo, s["vo"], s["vo_at"])
-    vo = reverb(vo, 1.2, 0.08, 5)
+    if a.asmr:
+        vo = asmr_voice(vo)
+        vo = reverb(vo, 0.9, 0.05, 5)
+    else:
+        vo = reverb(vo, 1.2, 0.08, 5)
     mus = np.zeros(n, np.float32); m = music(total, tl); mus[:len(m)] = m
+    if a.asmr:
+        mus = spectral(mus, lambda f: 1 / np.sqrt(1 + (f / 2600) ** 2)) * 0.55  # trilha mais escura e baixa
     S = {s["id"]: s for s in tl}
     def at(sid, f=0.0, off=0.0): return S[sid]["start"] + S[sid]["dur"] * f + off
     for s in tl[1:]: add(fx, sfx_whoosh(0.7, 0.07, int(s["start"])), s["start"] - 0.45)
@@ -1094,7 +1269,18 @@ def main():
     add(fx, sfx_chime(0.12), at("outro", 0.55))
     env = np.convolve(np.abs(vo), np.ones(6615) / 6615, "same")
     env = np.clip(env / (env.max() + 1e-6) * 4, 0, 1); env = lfilter1(env, 0.9997)
-    mixd = mus * (1 - 0.4 * env) * 0.9 + vo + fx
+    if a.asmr:
+        amb = np.zeros(n, np.float32); cr = sfx_crackle(total); amb[:len(cr)] = cr
+        add(fx, sfx_shuffle(0.2), at("intro", 0, 0.15))
+        for i in range(4): add(fx, sfx_card_slide(0.22, 40 + i), at("suits", 0, 0.15 + i * S["suits"]["dur"] * 0.16))
+        for i in range(4): add(fx, sfx_card_slide(0.22, 50 + i), at("game", 0.07 + i * 0.126, -0.25))
+        for i in range(5): add(fx, sfx_card_slide(0.18, 60 + i), at("etteilla", 0, 1.4 + i * 0.25))
+        for i in range(5): add(fx, sfx_card_slide(0.16, 70 + i), at("rws", 0, 0.2 + i * 0.5))
+        add(fx, sfx_shuffle(0.14, 9), at("today", 0, 0.1))
+        fx = fx * 0.75
+        mixd = mus * (1 - 0.35 * env) + vo + fx + amb
+    else:
+        mixd = mus * (1 - 0.4 * env) * 0.9 + vo + fx
     end = int(total * SR); mixd = mixd[:end]
     fade = int(1.2 * SR); mixd[-fade:] *= np.linspace(1, 0, fade)
     mixd = mixd / (np.abs(mixd).max() + 1e-6) * 0.95
@@ -1106,9 +1292,9 @@ def main():
     lst = os.path.join(tmp, "segs.txt")
     with open(lst, "w") as f:
         for s in segs: f.write(f"file '{os.path.abspath(s)}'\n")
-    final = os.path.join(a.out, "a_historia_do_taro.mp4")
+    final = os.path.join(a.out, "the_history_of_tarot.mp4" if a.lang == "en" else "a_historia_do_taro.mp4")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-i", wav, "-c:v", "copy",
-                    "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", "44100", "-c:a", "aac", "-b:a", "192k", "-shortest",
+                    "-af", f"loudnorm=I={-17 if a.asmr else -14}:TP=-1.5:LRA=11", "-ar", "44100", "-c:a", "aac", "-b:a", "192k", "-shortest",
                     "-movflags", "+faststart", final], check=True)
     with open(os.path.join(a.out, "legendas.srt"), "w") as f:
         fmt = lambda x: f"{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(x*1000%1000):03d}"
