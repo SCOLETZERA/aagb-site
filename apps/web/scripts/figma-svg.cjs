@@ -6,7 +6,9 @@
  * mesma hierarquia da página. Também sai um PNG da página inteira para referência.
  *
  * Uso: com o site rodando (npx vite preview --port 4173), execute
- *   NODE_PATH=$(npm root -g) npm run figma -- [url-base] [pasta-de-saída]
+ *   ADMIN_EMAIL=... ADMIN_PASSWORD=... NODE_PATH=$(npm root -g) npm run figma -- [url-base] [pasta-de-saída]
+ * Sem ADMIN_EMAIL/ADMIN_PASSWORD (conta do painel no banco local) as telas do painel ficam de fora.
+ * Para o painel aparecer, o site precisa ter sido gerado com VITE_API_URL apontando para a API local.
  * (usa o Playwright instalado na máquina; a saída padrão é apps/web/figma-export/)
  */
 const fs = require('node:fs')
@@ -16,22 +18,47 @@ const { chromium } = require('playwright')
 const BASE = process.argv[2] || 'http://localhost:4173'
 const OUT = path.resolve(process.argv[3] || path.join(__dirname, '..', 'figma-export'))
 
-const PAGES = [
-  ['01-inicio', '/'],
-  ['02-noticias', '/noticias'],
-  ['03-noticia', 'first:/noticias/'],
-  ['04-projetos', '/projetos'],
-  ['05-projeto', 'first:/projetos/'],
-  ['06-parceiros', '/parceiros'],
-  ['07-parceiro', 'first:/parceiros/'],
-  ['08-produtos', '/produtos'],
-  ['09-produto', 'first:/produtos/'],
-  ['10-servicos', '/servicos'],
-  ['11-doacoes', '/doacoes'],
-  ['12-feira', '/feira'],
-  ['13-transparencia', '/transparencia'],
-  ['14-privacidade', '/privacidade'],
+// [nome, endereço, ação antes da captura]. Endereço "first:/x/" abre o primeiro item da lista /x.
+const SITE = [
+  ['Início', '/'],
+  ['Notícias', '/noticias'],
+  ['Notícia (detalhe)', 'first:/noticias/'],
+  ['Projetos', '/projetos'],
+  ['Projeto (detalhe)', 'first:/projetos/'],
+  ['Parceiros', '/parceiros'],
+  ['Parceiro (detalhe)', 'first:/parceiros/'],
+  ['Produtos', '/produtos'],
+  ['Produto (detalhe)', 'first:/produtos/'],
+  ['Carrinho aberto', '/produtos', 'cart'],
+  ['Serviços', '/servicos'],
+  ['Doações', '/doacoes'],
+  ['Feira', '/feira'],
+  ['Transparência', '/transparencia'],
+  ['Privacidade', '/privacidade'],
+  ['Página não encontrada', '/pagina-que-nao-existe'],
+  ['Menu aberto', '/', 'menu', 'celular'],
 ]
+
+const ADMIN = [
+  ['Painel - Entrar', '/admin', 'logout'],
+  ['Painel - Resumo', '/admin', 'login'],
+  ['Painel - Pedidos', '/admin/pedidos'],
+  ['Painel - Serviços', '/admin/servicos'],
+  ['Painel - Doações recebidas', '/admin/doacoes'],
+  ['Painel - Notícias', '/admin/conteudo/news'],
+  ['Painel - Editar notícia', '/admin/conteudo/news', 'edit'],
+  ['Painel - Projetos', '/admin/conteudo/projects'],
+  ['Painel - Parceiros', '/admin/conteudo/partners'],
+  ['Painel - Produtos', '/admin/conteudo/products'],
+  ['Painel - Serviços oferecidos', '/admin/conteudo/services'],
+  ['Painel - Necessidades', '/admin/conteudo/needs'],
+  ['Painel - Doações (conteúdo)', '/admin/conteudo/donations'],
+  ['Painel - Documentos', '/admin/documentos'],
+  ['Painel - Contas', '/admin/contas'],
+  ['Painel - Auditoria', '/admin/auditoria'],
+]
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 
 const VIEWPORTS = [
   ['computador', { width: 1440, height: 900 }],
@@ -39,11 +66,12 @@ const VIEWPORTS = [
 ]
 
 /* Roda dentro da página: desenha o DOM como SVG. */
-async function toSvg(pageName) {
+async function toSvg({ pageName, viewportOnly }) {
   const SVGNS = 'http://www.w3.org/2000/svg'
   const FONT_RENAME = { 'Bricolage Grotesque Variable': 'Bricolage Grotesque' }
-  const sx = scrollX
-  const sy = scrollY
+  // Telas com janela aberta mostram só a parte visível: coordenadas relativas à tela.
+  const sx = viewportOnly ? 0 : scrollX
+  const sy = viewportOnly ? 0 : scrollY
   let uid = 0
   const defs = []
 
@@ -160,10 +188,14 @@ async function toSvg(pageName) {
     return [el.tagName.toLowerCase(), ...cls].join('.') + (label ? ` "${label}"` : '')
   }
 
+  // Fonte que o Figma vai usar. Pilhas de fontes do sistema viram uma fonte do Google Fonts parecida.
   function fontFamily(cs) {
-    let f = cs.fontFamily.split(',')[0].replace(/["']/g, '').trim()
+    const stack = cs.fontFamily.split(',').map((f) => f.replace(/["']/g, '').trim())
+    if (stack.includes('monospace') || stack.includes('ui-monospace')) return 'Roboto Mono'
+    const f = stack[0]
     return FONT_RENAME[f] || f
   }
+  const numeric = (cs) => (cs.fontVariantNumeric && cs.fontVariantNumeric !== 'normal' ? ` font-variant-numeric="${cs.fontVariantNumeric}"` : '')
 
   function textOf(str, cs) {
     if (cs.textTransform === 'uppercase') return str.toUpperCase()
@@ -210,7 +242,7 @@ async function toSvg(pageName) {
     const attrs = [
       `font-family="${esc(fontFamily(cs))}"`,
       `font-size="${px(cs.fontSize)}"`,
-      `font-weight="${cs.fontWeight}"`,
+      `font-weight="${cs.fontWeight}"${numeric(cs)}`,
       cs.fontStyle !== 'normal' ? `font-style="${cs.fontStyle}"` : '',
       `fill="${cs.color}"`,
       px(cs.letterSpacing) ? `letter-spacing="${n(px(cs.letterSpacing))}"` : '',
@@ -270,7 +302,78 @@ async function toSvg(pageName) {
     return `${pick(ox, 'x')}${pick(oy, 'Y')} ${cs.objectFit === 'cover' ? 'slice' : 'meet'}`
   }
 
-  async function draw(el) {
+  // Tamanho e posição de uma imagem de fundo (ex.: a setinha dos campos de seleção).
+  function natural(src) {
+    return new Promise((res) => {
+      const im = new Image()
+      im.onload = () => res([im.naturalWidth || 16, im.naturalHeight || 16])
+      im.onerror = () => res([16, 16])
+      im.src = src
+    })
+  }
+  function lengthIn(v, total, img) {
+    // Aceita "12px", "50%", "calc(100% - 12px)", "right 12px" já resolvido pelo navegador.
+    v = v.trim()
+    const calc = /^calc\((.*)\)$/.exec(v)
+    if (calc) {
+      return calc[1].split(/\s+(?=[+-]\s)/).reduce((acc, term) => {
+        const m = /^([+-])?\s*(-?[\d.]+)(%|px)$/.exec(term.trim())
+        if (!m) return acc
+        const val = m[3] === '%' ? (parseFloat(m[2]) / 100) * (total - img) : parseFloat(m[2])
+        return m[1] === '-' ? acc - val : acc + val
+      }, 0)
+    }
+    if (v.endsWith('%')) return (parseFloat(v) / 100) * (total - img)
+    return px(v)
+  }
+  async function bgBox(cs, src, x, y, w, h) {
+    if (cs.backgroundRepeat.startsWith('repeat') && cs.backgroundSize === 'auto') return { x, y, w, h }
+    const [nw, nh] = await natural(src)
+    let bw = nw
+    let bh = nh
+    const size = cs.backgroundSize.split(',')[0].trim()
+    if (size === 'cover' || size === 'contain') {
+      const k = size === 'cover' ? Math.max(w / nw, h / nh) : Math.min(w / nw, h / nh)
+      bw = nw * k
+      bh = nh * k
+    } else if (size !== 'auto') {
+      const [a, b = 'auto'] = size.split(/\s+/)
+      bw = a === 'auto' ? null : a.endsWith('%') ? (parseFloat(a) / 100) * w : px(a)
+      bh = b === 'auto' ? null : b.endsWith('%') ? (parseFloat(b) / 100) * h : px(b)
+      if (bw == null && bh == null) [bw, bh] = [nw, nh]
+      else if (bw == null) bw = (nw / nh) * bh
+      else if (bh == null) bh = (nh / nw) * bw
+    }
+    const bx = lengthIn(cs.backgroundPositionX.split(',')[0], w, bw)
+    const by = lengthIn(cs.backgroundPositionY.split(',')[0], h, bh)
+    return { x: x + bx, y: y + by, w: bw, h: bh }
+  }
+
+  // Quebra o texto em linhas que cabem na largura, como numa caixa de texto.
+  function wrapLines(text, cs, width) {
+    canvas.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+    const out = []
+    for (const para of text.split('\n')) {
+      let line = ''
+      for (const word of para.split(/\s+/)) {
+        const tryLine = line ? `${line} ${word}` : word
+        if (line && canvas.measureText(tryLine).width > width) {
+          out.push(line)
+          line = word
+        } else line = tryLine
+      }
+      out.push(line)
+    }
+    return out
+  }
+
+  const modals = []
+  async function draw(el, fromTop = false) {
+    // Janelas modais (carrinho, edição) ficam por cima de tudo: desenhadas no fim.
+    if (!fromTop && el.tagName === 'DIALOG' && el.open && el.matches(':modal')) {
+      modals.push(el)
+      return ''
+    }
     const cs = getComputedStyle(el)
     if (cs.display === 'none' || cs.visibility === 'hidden' && !el.children.length) return ''
     if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|LINK|META)$/.test(el.tagName)) return ''
@@ -301,7 +404,11 @@ async function toSvg(pageName) {
       const g = gradient(cs.backgroundImage, x, y, w, h)
       if (g) body += `${shapePath(x, y, w, h, rad)} fill="${g}"/>`
       const u = /url\("([^"]+)"\)/.exec(cs.backgroundImage)
-      if (u) body += `<image x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" preserveAspectRatio="xMidYMid slice" xlink:href="${await dataUrl(u[1])}"/>`
+      if (u) {
+        const src = await dataUrl(u[1])
+        const box = await bgBox(cs, src, x, y, w, h)
+        body += `<image x="${n(box.x)}" y="${n(box.y)}" width="${n(box.w)}" height="${n(box.h)}" preserveAspectRatio="none" xlink:href="${src}"/>`
+      }
     }
 
     // Bordas.
@@ -337,13 +444,69 @@ async function toSvg(pageName) {
       body += inlineSvg(el, r)
       return `<g id="${esc(layerName(el))}-${++uid}">${body}</g>`
     } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
-      const text = el.tagName === 'SELECT' ? el.options[el.selectedIndex]?.text : el.value || el.placeholder
+      let text = el.tagName === 'SELECT' ? el.options[el.selectedIndex]?.text : el.value || el.placeholder
+      if (el.type === 'date') {
+        text = el.value ? el.value.split('-').reverse().join('/') : 'dd/mm/aaaa'
+      }
+      if (el.type === 'checkbox' || el.type === 'radio' || el.type === 'file' || el.type === 'hidden') text = ''
+      if (el.type === 'password' && el.value) text = '•'.repeat(el.value.length)
+      const padL = px(cs.paddingLeft) + px(cs.borderLeftWidth)
+      const padR = px(cs.paddingRight) + px(cs.borderRightWidth)
+      const padT = px(cs.paddingTop) + px(cs.borderTopWidth)
+      const padB = px(cs.paddingBottom) + px(cs.borderBottomWidth)
+      const cx = x + padL
+      const cw = Math.max(0, w - padL - padR)
       if (text) {
         const [asc, desc] = ascent(cs)
-        const isPlaceholder = !el.value && el.tagName !== 'SELECT'
+        const isPlaceholder = !el.value && el.tagName !== 'SELECT' && el.type !== 'date'
         const color = isPlaceholder ? getComputedStyle(el, '::placeholder').color : cs.color
-        const top = el.tagName === 'TEXTAREA' ? y + px(cs.paddingTop) + px(cs.borderTopWidth) : y + (h - asc - desc) / 2
-        body += `<text font-family="${esc(fontFamily(cs))}" font-size="${px(cs.fontSize)}" font-weight="${cs.fontWeight}" fill="${color}"><tspan x="${n(x + px(cs.paddingLeft) + px(cs.borderLeftWidth))}" y="${n(top + asc)}">${esc(text)}</tspan></text>`
+        const font = `font-family="${esc(fontFamily(cs))}" font-size="${px(cs.fontSize)}" font-weight="${cs.fontWeight}" fill="${color}"`
+        const id = `c${++uid}`
+        defs.push(`<clipPath id="${id}"><rect x="${n(cx)}" y="${n(y + padT)}" width="${n(cw)}" height="${n(Math.max(0, h - padT - padB))}"/></clipPath>`)
+        let spans
+        if (el.tagName === 'TEXTAREA') {
+          const lh = cs.lineHeight === 'normal' ? px(cs.fontSize) * 1.2 : px(cs.lineHeight)
+          spans = wrapLines(text, cs, cw)
+            .map((l, k) => `<tspan x="${n(cx)}" y="${n(y + padT + k * lh + (lh - asc - desc) / 2 + asc)}">${esc(l)}</tspan>`)
+            .join('')
+        } else {
+          spans = `<tspan x="${n(cx)}" y="${n(y + (h - asc - desc) / 2 + asc)}">${esc(text)}</tspan>`
+        }
+        body += `<text ${font} clip-path="url(#${id})" xml:space="preserve">${spans}</text>`
+      }
+      if (el.type === 'file') {
+        // Campo de arquivo como o Chrome em português mostra.
+        const [asc, desc] = ascent(cs)
+        const fs2 = px(cs.fontSize)
+        canvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+        const label = 'Escolher arquivo'
+        const bw = canvas.measureText(label).width + 12
+        const bh = fs2 + 6
+        const by = y + (h - bh) / 2
+        const base = y + (h - asc - desc) / 2 + asc
+        const fid = `c${++uid}`
+        defs.push(`<clipPath id="${fid}"><rect x="${n(x)}" y="${n(y)}" width="${n(w - padR)}" height="${n(h)}"/></clipPath>`)
+        body += `<g id="campo de arquivo" clip-path="url(#${fid})">`
+        body += `<g id="botão escolher arquivo"><rect x="${n(cx)}" y="${n(by)}" width="${n(bw)}" height="${n(bh)}" rx="2" fill="#efefef" stroke="#767676" stroke-width="1"/><text font-family="${esc(fontFamily(cs))}" font-size="${fs2}" fill="#000000"><tspan x="${n(cx + 6)}" y="${n(base)}">${label}</tspan></text></g>`
+        body += `<text font-family="${esc(fontFamily(cs))}" font-size="${fs2}" fill="${cs.color}"><tspan x="${n(cx + bw + 5)}" y="${n(base)}">${el.files?.length ? esc(el.files[0].name) : 'Nenhum arquivo escolhido'}</tspan></text></g>`
+      }
+      if (el.tagName === 'SELECT' && cs.appearance !== 'none' && cs.backgroundImage === 'none') {
+        // Setinha do campo de seleção nativo.
+        const ax = x + w - px(cs.borderRightWidth) - 16
+        const ay = y + h / 2
+        body += `<path id="seta" d="M${n(ax - 4)},${n(ay - 2)}L${n(ax)},${n(ay + 2)}L${n(ax + 4)},${n(ay - 2)}" fill="none" stroke="${cs.color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`
+      }
+      if (el.type === 'date') {
+        // Ícone de calendário que o navegador mostra no campo de data.
+        const s2 = 14
+        const ix = x + w - padR - s2
+        const iy = y + (h - s2) / 2
+        body += `<g id="ícone calendário" fill="none" stroke="${cs.color}" stroke-width="1.6"><rect x="${n(ix + 1)}" y="${n(iy + 2)}" width="${s2 - 2}" height="${s2 - 3}" rx="1.5"/><path d="M${n(ix + 1)},${n(iy + 6)}H${n(ix + s2 - 1)}M${n(ix + 4.5)},${n(iy)}V${n(iy + 3.5)}M${n(ix + s2 - 4.5)},${n(iy)}V${n(iy + 3.5)}"/></g>`
+      }
+      if (el.tagName === 'TEXTAREA' && cs.resize !== 'none') {
+        const rx2 = x + w - px(cs.borderRightWidth) - 3
+        const ry2 = y + h - px(cs.borderBottomWidth) - 3
+        body += `<path id="alça de redimensionar" d="M${n(rx2 - 8)},${n(ry2)}L${n(rx2)},${n(ry2 - 8)}M${n(rx2 - 4)},${n(ry2)}L${n(rx2)},${n(ry2 - 4)}" stroke="#888888" stroke-width="1" fill="none"/>`
       }
     }
 
@@ -375,19 +538,47 @@ async function toSvg(pageName) {
     return `<g id="${esc(layerName(el))}-${++uid}"${op}>${content}</g>`
   }
 
-  const W = document.documentElement.scrollWidth
-  const H = document.documentElement.scrollHeight
+  const W = viewportOnly ? innerWidth : document.documentElement.scrollWidth
+  const H = viewportOnly ? innerHeight : document.documentElement.scrollHeight
   const pageBg = getComputedStyle(document.body).backgroundColor
   const htmlBg = getComputedStyle(document.documentElement).backgroundColor
   const bg = visibleColor(pageBg) ? pageBg : visibleColor(htmlBg) ? htmlBg : '#ffffff'
   const root = document.getElementById('root') || document.body
-  const content = await draw(root)
+  let content = await draw(root)
+  for (const dialog of modals) {
+    const back = getComputedStyle(dialog, '::backdrop').backgroundColor
+    if (visibleColor(back)) content += `<rect id="fundo escurecido" x="${n(sx)}" y="${n(sy)}" width="${innerWidth}" height="${innerHeight}" fill="${back}"/>`
+    content += await draw(dialog, true)
+  }
+  if (viewportOnly) {
+    defs.push(`<clipPath id="tela"><rect width="${W}" height="${H}"/></clipPath>`)
+    content = `<g clip-path="url(#tela)">${content}</g>`
+  }
   return `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
 <title>${esc(pageName)}</title>
 <defs>${defs.join('')}</defs>
 <g id="${esc(pageName)}"><rect id="fundo" width="${W}" height="${H}" fill="${bg}"/>${content}</g>
 </svg>
 `
+}
+
+/* O Figma lê melhor cor em hexadecimal com opacidade separada do que rgba(). */
+function figmaColors(svg) {
+  const hex = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')
+  return svg.replace(/(fill|stroke|stop-color|flood-color)="(rgba?\(([^)]*)\)|color\(srgb ([^)]*)\))"/g, (_, attr, _all, rgb, srgb) => {
+    let r, g, b, a
+    if (rgb !== undefined) {
+      ;[r, g, b, a = 1] = rgb.split(/[\s,/]+/).filter(Boolean).map(Number)
+    } else {
+      ;[r, g, b, a = 1] = srgb.split(/[\s/]+/).filter(Boolean).map(Number)
+      r *= 255
+      g *= 255
+      b *= 255
+    }
+    const color = `#${hex(r)}${hex(g)}${hex(b)}`
+    const opAttr = { fill: 'fill-opacity', stroke: 'stroke-opacity', 'stop-color': 'stop-opacity', 'flood-color': 'flood-opacity' }[attr]
+    return a < 1 ? `${attr}="${color}" ${opAttr}="${+a.toFixed(3)}"` : `${attr}="${color}"`
+  })
 }
 
 async function resolveUrl(page, target) {
@@ -403,35 +594,71 @@ async function resolveUrl(page, target) {
 }
 
 ;(async () => {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) console.warn('Sem ADMIN_EMAIL/ADMIN_PASSWORD: as telas do painel ficam de fora.')
   fs.mkdirSync(OUT, { recursive: true })
-  const browser = await chromium.launch()
+  const browser = await chromium.launch({ args: ['--lang=pt-BR'] })
   for (const [vpName, viewport] of VIEWPORTS) {
+    const label = vpName === 'computador' ? 'Computador' : 'Celular'
     const dir = path.join(OUT, vpName)
     fs.mkdirSync(dir, { recursive: true })
-    const page = await browser.newPage({ viewport, reducedMotion: 'reduce', colorScheme: 'light' })
-    await page.addInitScript(() => {
+    const context = await browser.newContext({ viewport, reducedMotion: 'reduce', colorScheme: 'light', locale: 'pt-BR', timezoneId: 'America/Fortaleza' })
+    await context.addInitScript(() => {
       try {
         localStorage.setItem('aagb-theme', 'light')
       } catch {
         /* sem armazenamento: tema padrão */
       }
     })
-    for (const [name, target] of PAGES) {
+    const page = await context.newPage()
+    const screens = [...SITE.filter((s) => !s[3] || s[3] === vpName), ...(ADMIN_EMAIL ? ADMIN : [])]
+    let i = 0
+    for (const [name, target, action] of screens) {
+      i++
       const url = await resolveUrl(page, target)
-      await page.goto(BASE + url, { waitUntil: 'networkidle' })
+      if (action === 'logout') await context.clearCookies()
+      await page.goto(BASE + url, { waitUntil: 'load' })
+      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {})
+      await page.waitForTimeout(500)
+      if (action === 'login') {
+        await page.getByLabel('E-mail').fill(ADMIN_EMAIL)
+        await page.getByLabel('Senha').fill(ADMIN_PASSWORD)
+        await page.getByRole('button', { name: 'Entrar' }).click()
+        await page.getByRole('navigation', { name: 'Painel' }).waitFor()
+        await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {})
+        await page.waitForTimeout(800)
+      }
+      if (action === 'cart') {
+        const add = page.getByRole('button', { name: 'Adicionar ao carrinho' })
+        await add.nth(0).click()
+        await add.nth(0).click()
+        await add.nth(2).click()
+        await add.nth(4).click()
+        // Espera o aviso "adicionado ao carrinho" sumir e volta ao topo antes de abrir.
+        await page.evaluate(() => scrollTo(0, 0))
+        await page.waitForTimeout(6000)
+        await page.getByRole('button', { name: /^Carrinho/ }).click()
+      }
+      if (action === 'menu') await page.getByRole('button', { name: 'Abrir menu' }).click()
+      if (action === 'edit') await page.getByRole('button', { name: /^Editar/ }).first().click()
       await page.addStyleTag({ content: '*,*::before,*::after{animation:none!important;transition:none!important}' })
       await page.evaluate(async () => {
         for (const img of document.images) img.loading = 'eager'
-        await Promise.all([...document.images].map((i) => (i.complete ? null : new Promise((r) => (i.onload = i.onerror = r)))))
+        await Promise.all([...document.images].map((im) => (im.complete ? null : new Promise((r) => (im.onload = im.onerror = r)))))
         await document.fonts.ready
       })
-      await page.waitForTimeout(300)
-      await page.screenshot({ path: path.join(dir, `${name}.png`), fullPage: true })
-      const svg = await page.evaluate(toSvg, `${name} (${vpName})`)
-      fs.writeFileSync(path.join(dir, `${name}.svg`), svg)
-      console.log(`${vpName}/${name}  ${url}  ${(svg.length / 1024).toFixed(0)} KB`)
+      await page.mouse.move(0, 0)
+      await page.waitForTimeout(400)
+      const viewportOnly = Boolean(action && action !== 'login' && action !== 'logout')
+      const file = `${String(i).padStart(2, '0')} ${label} - ${name}`
+      await page.screenshot({ path: path.join(dir, `${file}.png`), fullPage: !viewportOnly })
+      const svg = figmaColors(await page.evaluate(toSvg, { pageName: `${label} - ${name}`, viewportOnly }))
+      fs.writeFileSync(path.join(dir, `${file}.svg`), svg)
+      console.log(`${file}  ${page.url().replace(BASE, '')}  ${(svg.length / 1024).toFixed(0)} KB`)
+      if (action === 'cart' || action === 'edit' || action === 'menu') await page.keyboard.press('Escape')
+      // O carrinho de exemplo não deve aparecer no contador das próximas telas.
+      if (action === 'cart') await page.evaluate(() => localStorage.removeItem('aagb-cart'))
     }
-    await page.close()
+    await context.close()
   }
   await browser.close()
 })()
