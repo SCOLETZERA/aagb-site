@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run",
-    "figma": "node scripts/figma-export.cjs"
+    "figma": "node scripts/figma-svg.cjs"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
