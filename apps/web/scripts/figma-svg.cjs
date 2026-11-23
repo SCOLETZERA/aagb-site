@@ -538,7 +538,135 @@ async function toSvg({ pageName, viewportOnly }) {
     return `<g id="${esc(layerName(el))}-${++uid}"${op}>${content}</g>`
   }
 
+  // Partes da tela com o nome do que cada uma é, para as etiquetas de anotação.
+  function findRegions() {
+    const out = []
+    const vis = (el) => {
+      const r = el.getBoundingClientRect()
+      const cs = getComputedStyle(el)
+      return r.width > 40 && r.height > 20 && cs.display !== 'none' && cs.visibility !== 'hidden'
+    }
+    const clean = (t) => (t || '').replace(/\s+/g, ' ').trim()
+    const short = (t, max = 58) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t)
+    const add = (el, label) => {
+      if (el && vis(el)) out.push({ el, label: short(label) })
+    }
+    const isCardHead = (h) => h.closest('article, li, dialog, [class*="card" i]')
+    const heads = (el) => [...el.querySelectorAll('h1, h2')].filter((h) => (h.tagName === 'H1' || !isCardHead(h)) && vis(h))
+    const home = location.pathname === '/'
+    const admin = location.pathname.startsWith('/admin')
+    const h1Text = clean(document.querySelector('main h1')?.textContent)
+
+    // Com uma janela aberta, só ela é marcada: o resto da tela fica escurecido atrás.
+    const openDialog = [...document.querySelectorAll('dialog')].find((d) => d.open)
+    if (openDialog) {
+      add(openDialog, `Janela: ${clean(openDialog.querySelector('h1, h2, h3')?.textContent || 'aberta')}`)
+      const form = openDialog.querySelector('form')
+      if (form) add(form, 'Formulário')
+      return out
+    }
+    const header = [...document.querySelectorAll('header')].find((h) => !h.closest('main') && !h.closest('dialog'))
+    if (header) add(header, admin ? 'Barra do painel' : 'Cabeçalho e menu')
+    const nav = header?.querySelector('nav')
+    if (nav && nav.getBoundingClientRect().height > 200) add(nav, 'Menu aberto')
+    const side = document.querySelector('nav[aria-label="Painel"]')
+    if (side) add(side, 'Menu do painel')
+
+    function label(k) {
+      const hs = heads(k)
+      const h1 = hs.find((h) => h.tagName === 'H1')
+      if (k.matches('h1')) return 'Título da página'
+      if (k.matches('h2, h3')) return `Seção: ${clean(k.textContent)}`
+      if (k.matches('img')) return 'Logo'
+      if (h1) {
+        if (home) return 'Destaque principal'
+        // Página de detalhe (ex.: /noticias/alguma-coisa): o bloco do título é o conteúdo inteiro.
+        const detail = location.pathname.split('/').filter(Boolean).length > 1 && !admin
+        return detail && k.getBoundingClientRect().height > 300 ? `Conteúdo: ${clean(h1.textContent)}` : 'Título da página'
+      }
+      if (/^Nenhum/i.test(clean(k.textContent))) return 'Aviso de lista vazia'
+      if (k.querySelector('input[type=search]') && !k.querySelector('article')) return 'Busca'
+      const h2 = hs[0]
+      if (k.matches('form') || (!h2 && k.querySelector('form'))) return 'Formulário'
+      if (h2) return `Seção: ${clean(h2.textContent)}`
+      if (k.querySelector('table') || k.matches('table')) return `Tabela: ${h1Text}`
+      if (k.matches('a[href]') && clean(k.textContent).length < 30) return 'Link de voltar'
+      if (k.matches('ul, ol') || k.querySelectorAll('article, li').length > 1) return h1Text ? `Lista: ${h1Text}` : 'Lista de itens'
+      if (k.querySelector('img, svg') && clean(k.textContent).length < 40) return 'Logo e nome'
+      if (k.querySelector('img')) return 'Imagem'
+      if (k.matches('p')) return 'Texto de apresentação'
+      if (/\d/.test(k.textContent) && k.children.length > 1) return 'Números em destaque'
+      return k.getAttribute('aria-label') || 'Conteúdo'
+    }
+
+    function walk(el) {
+      let level = el
+      while (level.children.length === 1 && level.firstElementChild) level = level.firstElementChild
+      for (const k of [...level.children].filter((c) => vis(c) && c.tagName !== 'DIALOG')) {
+        // Bloco com várias seções dentro: separa cada uma.
+        const hs = heads(k)
+        const n2 = hs.filter((h) => h.tagName === 'H2' && !/^Nenhum/i.test(clean(h.textContent))).length
+        const hasH1 = hs.some((h) => h.tagName === 'H1')
+        if ((n2 > 1 && !hasH1) || (hasH1 && n2 > 0 && !home && k.children.length > 1)) walk(k)
+        else add(k, label(k))
+      }
+    }
+    const main = document.querySelector('main')
+    if (main) walk(main)
+
+    const footer = [...document.querySelectorAll('footer')].find((f) => !f.closest('main'))
+    if (footer) add(footer, 'Rodapé')
+    const dialog = [...document.querySelectorAll('dialog')].find((d) => d.open)
+    if (dialog) add(dialog, `Janela: ${clean(dialog.querySelector('h1, h2, h3')?.textContent || 'aberta')}`)
+    return out
+  }
+
+  // Etiquetas em cima de cada parte da tela, numa camada própria ("Anotações") que dá para esconder.
+  function annotations(W) {
+    const ANN = '#7b3fe4'
+    const small = W < 600
+    const fsz = small ? 13 : 15
+    const ph = small ? 24 : 28
+    canvas.font = `700 ${fsz}px "Atkinson Hyperlegible Next", sans-serif`
+    let outA = ''
+    const regions = findRegions()
+      .map(({ el, label }) => {
+        const r = el.getBoundingClientRect()
+        return { el, label, x: r.left + sx, y: r.top + sy, w: r.width, h: r.height, r }
+      })
+      .filter((g) => !(viewportOnly && (g.r.bottom <= 0 || g.r.top >= innerHeight)))
+    const placed = []
+    const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+    const contains = (a, b) => a.x <= b.x + 1 && a.y <= b.y + 1 && a.x + a.w >= b.x + b.w - 1 && a.y + a.h >= b.y + b.h - 1
+    for (const g of regions) {
+      const pw = canvas.measureText(g.label).width + 20
+      // Lugares possíveis, na ordem de preferência: em cima, ao lado direito, dentro no canto.
+      const cands = [
+        { x: g.x, y: g.y - ph - 4 },
+        { x: g.x + g.w + 10, y: g.y + Math.min(4, Math.max(0, (g.h - ph) / 2)) },
+        // Dentro: no canto direito (o texto costuma estar à esquerda). Na barra do topo, à esquerda.
+        ...(g.y < 4
+          ? [{ x: g.x + 6, y: g.y + 4 }, { x: g.x + g.w - pw - 6, y: g.y + 4 }]
+          : [{ x: g.x + g.w - pw - 6, y: g.y + 4 }, { x: g.x + 6, y: g.y + 4 }]),
+      ].map((c, i) => ({ x: i === 1 ? c.x : Math.max(4, Math.min(c.x, W - pw - 4)), y: c.y, w: pw, h: ph }))
+      const ok = (c) =>
+        c.y >= 2 &&
+        c.x + c.w <= W - 2 &&
+        !placed.some((p) => hit(c, { x: p.x - 4, y: p.y - 3, w: p.w + 8, h: p.h + 6 })) &&
+        !regions.some((o) => o !== g && !contains(o, g) && hit(c, o))
+      const pos = cands.find(ok) || cands.find((c) => c.y >= 2 && !placed.some((p) => hit(c, p))) || cands[2]
+      placed.push(pos)
+      outA += `<g id="Anotação: ${esc(g.label)}">`
+      outA += `<rect x="${n(g.x + 1)}" y="${n(g.y + 1)}" width="${n(Math.max(0, g.w - 2))}" height="${n(Math.max(0, g.h - 2))}" rx="6" fill="none" stroke="${ANN}" stroke-width="2" stroke-dasharray="8 6"/>`
+      outA += `<rect x="${n(pos.x)}" y="${n(pos.y)}" width="${n(pw)}" height="${ph}" rx="${ph / 2}" fill="${ANN}"/>`
+      outA += `<text font-family="Atkinson Hyperlegible Next" font-size="${fsz}" font-weight="700" fill="#ffffff"><tspan x="${n(pos.x + 10)}" y="${n(pos.y + ph / 2 + fsz * 0.36)}">${esc(g.label)}</tspan></text>`
+      outA += '</g>'
+    }
+    return outA ? `<g id="Anotações">${outA}</g>` : ''
+  }
+
   const W = viewportOnly ? innerWidth : document.documentElement.scrollWidth
+
   const H = viewportOnly ? innerHeight : document.documentElement.scrollHeight
   const pageBg = getComputedStyle(document.body).backgroundColor
   const htmlBg = getComputedStyle(document.documentElement).backgroundColor
@@ -550,6 +678,7 @@ async function toSvg({ pageName, viewportOnly }) {
     if (visibleColor(back)) content += `<rect id="fundo escurecido" x="${n(sx)}" y="${n(sy)}" width="${innerWidth}" height="${innerHeight}" fill="${back}"/>`
     content += await draw(dialog, true)
   }
+  content += annotations(W)
   if (viewportOnly) {
     defs.push(`<clipPath id="tela"><rect width="${W}" height="${H}"/></clipPath>`)
     content = `<g clip-path="url(#tela)">${content}</g>`
