@@ -50,7 +50,7 @@
 }
 
 .list a:hover {
-  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  background: var(--brand-tint-10);
 }
 
 .date {

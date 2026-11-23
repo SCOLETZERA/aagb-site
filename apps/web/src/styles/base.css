@@ -75,7 +75,7 @@ button,
 select,
 summary {
   touch-action: manipulation;
-  -webkit-tap-highlight-color: color-mix(in srgb, var(--sun) 35%, transparent);
+  -webkit-tap-highlight-color: var(--tap-highlight);
 }
 
 :focus-visible {

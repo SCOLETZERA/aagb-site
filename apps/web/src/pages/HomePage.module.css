@@ -2,7 +2,7 @@
   position: relative;
   overflow: hidden;
   padding-top: var(--space-6);
-  background: color-mix(in srgb, var(--sun) 16%, var(--paper));
+  background: var(--hero-bg);
 }
 
 .heroGrid {

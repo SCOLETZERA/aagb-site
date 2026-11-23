@@ -50,7 +50,7 @@
 }
 
 .ghost:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  background: var(--brand-tint-12);
 }
 
 .lg {
