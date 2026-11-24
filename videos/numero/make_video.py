@@ -21,6 +21,7 @@ _spec = importlib.util.spec_from_file_location("sp", os.path.join(HERE, "..", "s
 sp = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(sp)
 
 from engine3d import Renderer, T, Ry, SMILE, SAD, SHOCK, LAUGH, NEUTRAL, HAPPY, CRY, SMIRK, box, EMISSIVE  # noqa
+import world as world_mod
 from world import (character, walk_pose, head_pos, school, crowd_pal, stair_height, THEO, LUCAS, BIA,
                    LIGHT_DAY, LIGHT_SUNSET, LIGHT_GLOOM)
 
@@ -61,13 +62,15 @@ SCENES = [
     dict(id="lesson", mood="emotional", pad=1.6,
          text="Não importa quantas pessoas te seguem. Importa quantas ficam quando você cai. Seja o um de alguém.",
          cap="Não importa quantas pessoas te seguem. Importa quantas ficam quando você cai. Seja o 1 de alguém."),
-    dict(id="cta", mood="outro", pad=1.6,
+    dict(id="cta", mood="outro", pad=0.8,
          text="Marca aqui aquele amigo que é o seu um.", cap="Marca aqui aquele amigo que é o seu 1."),
+    dict(id="dance", mood="triumph", pad=5.5,
+         text="E o Levi? O número do Levi é... seis, sete!", cap="E o Levi? O número do Levi é... 67!"),
 ]
 
 sp.HIGHLIGHT = {"número", "999.", "1.", "2.", "um.", "lucas,", "lucas", "bia,", "bia.", "ninguém", "filmou.", "riu.",
                 "cair.", "único", "dinheiro", "verdade.", "verdade:", "sozinha.", "escada,", "mão,", "lá.", "1", "olhei.",
-                "popular", "impressionar.", "joão?", "isabella,", "mateus,", "rayane...", "bia"}
+                "popular", "impressionar.", "levi?", "67!", "levi", "joão?", "isabella,", "mateus,", "rayane...", "bia"}
 
 # ----------------------------------------------------------------------------
 # OVERLAYS 2D
@@ -150,7 +153,7 @@ def world(sunset=0.0):
     if k not in WORLD: WORLD[k] = school(k)
     return list(WORLD[k])
 
-WALKERS = [(-20, 6, 1, "12"), (18, 2, -1, "48"), (-16, -2, 1, "7"), (22, 10, -1, "23"), (-24, 12, 1, "3"), (14, -9, -1, "31"), (-10, 15, 1, "64")]
+WALKERS = [(-20, 6, 1, "12"), (18, 2, -1, "48"), (-16, -2, 1, "7"), (22, 10, -1, "23"), (-24, 12, 1, "67"), (14, -9, -1, "31"), (-10, 15, 1, "64")]
 
 def sc_hook(t, D):
     bx = world()
@@ -177,7 +180,7 @@ def lucas_crowd(t, bx, labels, cheer=True, phones=()):
         pose = dict(armL=(0, 160 if cheer else 5), armR=((80, 0) if ph else (0, 150 if cheer else 5)), bob=j)
         nm = RING_NAMES[i]
         bx += character(pos, yaw, npal(nm) if nm else crowd_pal(i + 10), LAUGH if cheer else SHOCK, pose, item="phone" if ph else None)
-        labels.append((head_pos(pos, bob=j), str(5 + (i * 13) % 40), nm))
+        labels.append((head_pos(pos, bob=j), "67" if nm == "Levi" else str(5 + (i * 13) % 40), nm))
 
 def sc_lucas(t, D):
     bx = world(); labels = []
@@ -427,11 +430,11 @@ def sc_reveal(t, D):
             for i in range(int(n * kk)):
                 u0, u1 = i / n, (i + 0.5) / n
                 def P(u): return (lerp(a[0], b[0], u), lerp(a[1], b[1], u) - math.sin(u * math.pi) * 180)
-                d.line([P(u0), P(u1)], fill=(255, 120, 160), width=10)
-            if kk >= 1: sp.glow(img, b[0], b[1], 160, (255, 140, 180), 0.8)
+                d.line([P(u0), P(u1)], fill=(255, 210, 70), width=10)
+            if kk >= 1: sp.glow(img, b[0], b[1], 160, (255, 220, 120), 0.8)
         badge(img, VP, head_pos(hero), "2", "green", scale=1.1, name="João")
         badge(img, VP, head_pos(BIA_SEAT, bob=-0.35), "1", "gray", scale=1.1, name="Bia")
-        if t > D * 0.55: pop_text(img, W/2, 470, "ERA ELA.", t - D * 0.55, size=110, fill=(255, 150, 190))
+        if t > D * 0.55: pop_text(img, W/2, 470, "AMIGA DE VERDADE", t - D * 0.55, size=92, fill=(255, 215, 60))
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
 TRIO = [(-6.2, BIA, "2"), (-4.0, THEO, "2"), (-1.8, LUCAS, "2")]
@@ -495,8 +498,69 @@ def sc_cta(t, D):
                       fill=(255, 255, 255), outline=(20, 20, 26), width=6)
     return dict(boxes=bx, cam=cam, light=LIGHT_SUNSET, post=post)
 
+DANCERS = [("João", THEO, "2"), ("Bia", BIA, "2"), ("Lucas", LUCAS, "2"), ("Isabella", None, "64"), ("Ivna", None, "48"),
+           ("Rayane", None, "31"), ("Jesus", None, "12"), ("Mateus", None, "7"), ("Adrielly", None, "23")]
+DANCE_MOVES = ["toprock", "headspin", "backspin", "toprock", "headspin", "toprock", "backspin", "toprock", "headspin"]
+
+def dancer(t, i, name, pal, pos, move):
+    """Passos de breakdance. Devolve (boxes, ponto_do_número)."""
+    pal = pal or npal(name)
+    ph = t * 2 + i
+    if move == "headspin":
+        y = 6.3 + abs(math.sin(t * 4 + i)) * 0.1
+        yaw = t * 9 + i
+        pose = dict(legL=35, legR=-35, armL=(0, 80), armR=(0, 80))
+        bx = character((pos[0], y, pos[2]), yaw, pal, LAUGH, pose, fall=180, flag=False)
+        return bx, (pos[0], 0.6, pos[2])
+    if move == "backspin":
+        yaw = t * 7 + i
+        pose = dict(legL=70 + math.sin(t * 9) * 20, legR=90 + math.cos(t * 9) * 20, armL=(150, 30), armR=(150, 30))
+        bx = character((pos[0], 0.55, pos[2]), yaw, pal, HAPPY, pose, fall=90, flag=False)
+        return bx, (pos[0], 2.2, pos[2])
+    # toprock: passos em pé com chutes e braços cruzando
+    k = math.sin(ph * 4)
+    pose = dict(legL=max(0, k) * 60, legR=max(0, -k) * 60, armL=(60 + k * 40, 20), armR=(60 - k * 40, 20),
+                bob=abs(math.sin(ph * 8)) * 0.35, lean=8 * k)
+    bx = character(pos, math.sin(ph * 2) * 0.6, pal, LAUGH, pose, flag=False)
+    return bx, head_pos(pos, bob=pose["bob"])
+
+def sc_dance(t, D):
+    bx = world()
+    labels = []
+    ring = []
+    for i, (nm, pal, n) in enumerate(DANCERS):
+        a = i / len(DANCERS) * math.tau + math.pi / len(DANCERS)
+        ring.append((6 + math.sin(a) * 11, 0, -6 + math.cos(a) * 9))
+    for i, ((nm, pal, n), pos) in enumerate(zip(DANCERS, ring)):
+        b, lp = dancer(t, i, nm, pal, pos, DANCE_MOVES[i])
+        bx += b; labels.append((lp, n, nm))
+    # bandeiras fincadas em volta da roda
+    for k in range(8):
+        a = k / 8 * math.tau
+        bx += world_mod.pride_flag((6 + math.sin(a) * 16, 0, -8 + math.cos(a) * 12), a + math.pi / 2, k)
+    # Levi no centro fazendo o "6-7" (mãos sobem e descem alternadas, palmas pra cima)
+    levi = (6, 0, -6)
+    six7 = t > 1.2
+    k = math.sin(t * 11)
+    pose = dict(armL=(80 + (k * 28 if six7 else 0), 18), armR=(80 - (k * 28 if six7 else 0), 18),
+                bob=abs(k) * 0.15 if six7 else 0)
+    bx += character(levi, 0, npal("Levi"), SMIRK if six7 else HAPPY, pose, flag=False)
+    a = t * 0.35
+    cam = ((6 + math.sin(a) * 5, 27, 22), (6, 1.0, -7), 52)
+    def post(img, VP):
+        for p_, n, nm in labels: badge(img, VP, p_, n, "white", scale=0.75, name=nm)
+        badge(img, VP, head_pos(levi, bob=pose["bob"]), "67", "gold", scale=1.5, pop=t * 2, name="Levi")
+        if six7:
+            tt = t - 1.2
+            ph = int(tt * 11 / math.pi) % 2
+            pop_text(img, W * 0.25, 1230 if ph == 0 else 1290, "6", tt % (2 * math.pi / 11) if False else 1, size=170,
+                     fill=(255, 215, 60) if ph == 0 else (255, 255, 255))
+            pop_text(img, W * 0.75, 1290 if ph == 0 else 1230, "7", 1, size=170,
+                     fill=(255, 255, 255) if ph == 0 else (255, 215, 60))
+    return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
+
 SCENE_FUN = {f.__name__[3:]: f for f in [sc_hook, sc_lucas, sc_me, sc_copy, sc_money, sc_bia, sc_fall, sc_film, sc_help,
-                                          sc_numbers, sc_reveal, sc_sunset, sc_lesson, sc_cta]}
+                                          sc_numbers, sc_reveal, sc_sunset, sc_lesson, sc_dance, sc_cta]}
 
 # ----------------------------------------------------------------------------
 # NARRAÇÃO / LINHA DO TEMPO
@@ -564,6 +628,7 @@ def frame(fi, tl, total):
     sc = next((s for s in tl if s["start"] <= t < s["start"] + s["dur"]), tl[-1])
     lt = t - sc["start"]
     fn = SCENE_FUN[sc["id"]]
+    world_mod.FLAG_T = t
     S = fn(lt, sc["dur"], sc.get("lcues")) if sc["id"] == "lesson" else fn(lt, sc["dur"])
     arr, VP = _R["r"].render(S["boxes"], S["cam"], S["light"], t)
     img = Image.fromarray(arr)

@@ -21,7 +21,26 @@ def crowd_pal(i):
                 style=r.choice(["short", "short", "long", "spiky"]))
 
 # ------------------------------------------------------------------ personagem
-def character(pos, yaw=0.0, pal=THEO, expr=SMILE, pose=None, scale=1.0, fall=0.0, item=None, head_yaw=0.0):
+FLAG_T = 0.0          # tempo atual (para a bandeira balançar)
+FLAGS_ON = True
+PRIDE = [(228, 3, 3), (255, 140, 0), (255, 237, 0), (0, 150, 50), (20, 90, 255), (130, 20, 150)]
+
+def pride_flag(hand_world, yaw, seed=0.0):
+    """Mastro vertical saindo da mão + bandeira arco-íris ondulando."""
+    out = []
+    x, y, z = hand_world
+    base = T(x, y, z) @ Ry(yaw)
+    out.append(box(base @ T(0, 2.0, 0), (0.18, 5.2, 0.18), (235, 235, 240)))
+    out.append(box(base @ T(0, 4.7, 0), (0.32, 0.32, 0.32), (250, 210, 70)))
+    nseg, seg_w, stripe_h = 6, 0.55, 0.34
+    for k in range(nseg):
+        wave = math.sin(FLAG_T * 7 - k * 0.9 + seed) * 0.22 * (k / nseg + 0.25)
+        m = base @ T(0.15 + seg_w * (k + 0.5), 0, wave)
+        for j, c in enumerate(PRIDE):
+            out.append(box(m @ T(0, 4.5 - j * stripe_h, 0), (seg_w + 0.02, stripe_h, 0.06), c))
+    return out
+
+def character(pos, yaw=0.0, pal=THEO, expr=SMILE, pose=None, scale=1.0, fall=0.0, item=None, head_yaw=0.0, flag=None):
     """
     pos: (x,y,z) dos pés. yaw: direção (0 = olhando para +z).
     pose: dict com armL/armR = (frente_graus, lado_graus), legL/legR = graus, lean, bob.
@@ -54,6 +73,9 @@ def character(pos, yaw=0.0, pal=THEO, expr=SMILE, pose=None, scale=1.0, fall=0.0
                 out.append(box(m @ T(0, -1.7, 0.6), (0.6, 1.0, 0.12), (25, 25, 30), SCREEN))
             elif item == "book":
                 out.append(box(m @ T(0.2, -1.6, 0.6), (1.2, 0.9, 0.25), (200, 60, 60)))
+        if side == 1 and (flag if flag is not None else FLAGS_ON) and abs(fall) < 1:
+            h = m @ np.array([0, -1.65, 0.0, 1], np.float32)
+            out += pride_flag(h[:3], yaw, pos[0] * 0.7 + pos[2] * 0.3)
     # cabeça
     hm = body @ T(0, 2.05, 0) @ Ry(D(head_yaw))
     out.append(box(hm @ T(0, 0.62, 0), (1.25, 1.22, 1.2), sk, HEAD, float(expr)))
