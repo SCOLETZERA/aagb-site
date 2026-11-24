@@ -73,6 +73,9 @@ def character(pos, yaw=0.0, pal=THEO, expr=SMILE, pose=None, scale=1.0, fall=0.0
                 out.append(box(m @ T(0, -1.7, 0.6), (0.6, 1.0, 0.12), (25, 25, 30), SCREEN))
             elif item == "book":
                 out.append(box(m @ T(0.2, -1.6, 0.6), (1.2, 0.9, 0.25), (200, 60, 60)))
+            elif item == "letter":
+                out.append(box(m @ T(0, -1.75, 0.62), (1.0, 1.3, 0.05), (250, 248, 238)))
+                out.append(box(m @ T(0, -1.75, 0.66), (0.25, 0.25, 0.04), (200, 30, 40), EMISSIVE))
         if side == 1 and (flag if flag is not None else FLAGS_ON) and abs(fall) < 1:
             h = m @ np.array([0, -1.65, 0.0, 1], np.float32)
             out += pride_flag(h[:3], yaw, pos[0] * 0.7 + pos[2] * 0.3)
