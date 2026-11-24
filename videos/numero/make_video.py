@@ -2,10 +2,10 @@
 """
 "Nesse mundo, todo mundo tem um número em cima da cabeça" — vídeo viral vertical em 3D
 (personagens em blocos) com lição de vida. Renderização 3D própria (engine3d.py, OpenGL),
-narração Kokoro (pt-BR), trilha e efeitos sintetizados.
+narração Piper/faber (pt-BR, via sherpa-onnx), trilha e efeitos sintetizados.
 
 Uso:
-    python3 make_video.py --model kokoro-v1.0.onnx --voices voices-v1.0.bin --out out/
+    python3 make_video.py --voice-dir vits-piper-pt_BR-faber-medium --out out/
 """
 import argparse, hashlib, math, os, random, subprocess, sys
 from multiprocessing import Pool
@@ -37,7 +37,7 @@ SCENES = [
     dict(id="lucas", mood="hope", pad=0.4,
          text="O Lucas, o garoto mais popular da escola, tinha novecentos e noventa e nove.",
          cap="O Lucas, o garoto mais popular da escola, tinha 999."),
-    dict(id="me", mood="sad", pad=1.5, text="E eu? Eu tinha... um.", cap="E eu? Eu tinha... 1."),
+    dict(id="me", mood="sad", pad=1.5, text="E eu, o João? Eu tinha... um.", cap="E eu, o João? Eu tinha... 1."),
     dict(id="copy", mood="hope", pad=0.4,
          text="Eu queria ser igual a ele. Copiei as roupas, o jeito de andar, até as piadas."),
     dict(id="money", mood="hope", pad=0.5,
@@ -47,7 +47,7 @@ SCENES = [
     dict(id="fall", mood="storm", pad=0.6,
          text="Um dia, o Lucas tropeçou na escada, na frente de todo mundo."),
     dict(id="film", mood="storm", pad=0.8,
-         text="E ninguém ajudou. Todo mundo filmou. Todo mundo riu. E o número dele começou a cair."),
+         text="E ninguém ajudou. A Isabella, o Mateus, a Rayane... todo mundo filmou. Todo mundo riu. E o número dele começou a cair."),
     dict(id="help", mood="emotional", pad=1.2,
          text="Eu fui o único que parei. Estendi a mão, e ajudei ele a levantar."),
     dict(id="numbers", mood="triumph", pad=0.6,
@@ -57,7 +57,7 @@ SCENES = [
          text="Foi aí que eu entendi quem era o meu primeiro um. A Bia. Ela sempre esteve lá. Eu é que nunca olhei.",
          cap="Foi aí que eu entendi quem era o meu primeiro 1. A Bia. Ela sempre esteve lá. Eu é que nunca olhei."),
     dict(id="sunset", mood="emotional", pad=0.6,
-         text="Hoje, nós três passamos o intervalo juntos. Meu número é pequeno. Mas cada pessoa nele é de verdade."),
+         text="Hoje, eu, a Bia e o Lucas passamos o intervalo juntos. Meu número é pequeno. Mas cada pessoa nele é de verdade."),
     dict(id="lesson", mood="emotional", pad=1.6,
          text="Não importa quantas pessoas te seguem. Importa quantas ficam quando você cai. Seja o um de alguém.",
          cap="Não importa quantas pessoas te seguem. Importa quantas ficam quando você cai. Seja o 1 de alguém."),
@@ -67,7 +67,7 @@ SCENES = [
 
 sp.HIGHLIGHT = {"número", "999.", "1.", "2.", "um.", "lucas,", "lucas", "bia,", "bia.", "ninguém", "filmou.", "riu.",
                 "cair.", "único", "dinheiro", "verdade.", "verdade:", "sozinha.", "escada,", "mão,", "lá.", "1", "olhei.",
-                "popular", "impressionar."}
+                "popular", "impressionar.", "joão?", "isabella,", "mateus,", "rayane...", "bia"}
 
 # ----------------------------------------------------------------------------
 # OVERLAYS 2D
@@ -82,7 +82,7 @@ BADGE = {"gold": ((255, 205, 60), (90, 60, 0)), "gray": ((210, 210, 215), (40, 4
          "red": ((235, 60, 60), (255, 255, 255)), "green": ((80, 220, 110), (10, 60, 20)),
          "white": ((255, 255, 255), (30, 30, 36))}
 
-def badge(img, VP, pos, txt, style="white", scale=1.0, pop=1.0, shake=0.0, t=0.0):
+def badge(img, VP, pos, txt, style="white", scale=1.0, pop=1.0, shake=0.0, t=0.0, name=None):
     pr = project(VP, pos)
     if not pr: return
     x, y, w = pr
@@ -98,6 +98,11 @@ def badge(img, VP, pos, txt, style="white", scale=1.0, pop=1.0, shake=0.0, t=0.0
         sp.glow(img, x, y, s * 1.6, (255, 210, 80), 0.6); d = ImageDraw.Draw(img)
     d.rounded_rectangle(box_, radius=s * 0.3, fill=bg, outline=(20, 20, 26), width=max(3, int(s / 14)))
     d.text((x - tw/2, y - s * 0.58), txt, font=f, fill=fg)
+    if name:
+        fn_ = font(max(22, s * 0.42))
+        nw = d.textlength(name.upper(), font=fn_)
+        d.text((x - nw/2, box_[1] - s * 0.5), name.upper(), font=fn_, fill=(255, 255, 255),
+               stroke_width=max(3, int(s / 16)), stroke_fill=(15, 15, 20))
 
 def pop_text(img, x, y, txt, t, size=100, fill=(255, 255, 255)):
     sp.pop_text(img, x, y, txt, t, size=size, fill=fill)
@@ -122,6 +127,23 @@ def eout(x): x = max(0.0, min(1.0, x)); return 1 - (1 - x) ** 3
 def lerp(a, b, t): return a + (b - a) * t
 def lerpv(a, b, t): return tuple(lerp(x, y, t) for x, y in zip(a, b))
 
+NAMES = ["Isabella", "Ivna", "Rayane", "Jesus", "Mateus", "Adrielly", "Levi"]
+GIRLS = {"Isabella", "Ivna", "Rayane", "Adrielly"}
+_NP = {}
+def npal(name):
+    if name not in _NP:
+        pal = dict(crowd_pal(NAMES.index(name) * 7 + 3))
+        if name in GIRLS: pal["style"] = "long"
+        elif pal["style"] == "long": pal["style"] = "short"
+        if name == "Jesus": pal.update(hair=(40, 28, 22), style="short")
+        _NP[name] = pal
+    return _NP[name]
+
+WALK_NAMES = ["Jesus", "Ivna", "Mateus", "Adrielly", "Levi", "Rayane", "Isabella"]
+RING_NAMES = ["Isabella", "Mateus", "Rayane", "Jesus", "Ivna", "Levi", "Adrielly", None]
+FILM_NAMES = ["Isabella", "Mateus", "Rayane", "Ivna", "Adrielly", "Levi"]
+FALL_NAMES = ["Jesus", "Levi", "Ivna", "Mateus", "Adrielly"]
+
 WORLD = {}
 def world(sunset=0.0):
     k = round(sunset, 2)
@@ -136,12 +158,12 @@ def sc_hook(t, D):
     for i, (x0, z, dr, n) in enumerate(WALKERS):
         x = x0 + dr * t * 3.2
         pos = (x, 0, z); yaw = D2R(90 * dr)
-        bx += character(pos, yaw, crowd_pal(i), SMILE if i % 2 else HAPPY, walk_pose(t + i))
-        labels.append((head_pos(pos), n))
+        bx += character(pos, yaw, npal(WALK_NAMES[i]), SMILE if i % 2 else HAPPY, walk_pose(t + i))
+        labels.append((head_pos(pos), n, WALK_NAMES[i]))
     k = ease(t / D)
-    cam = (lerpv((0, 16, 38), (2, 8, 24), k), (0, 3, 2), 52)
+    cam = (lerpv((4, 18, 38), (6, 12, 26), k), (2, 3, 2), 52)
     def post(img, VP):
-        for p, n in labels: badge(img, VP, p, n, "white", pop=(t * 3))
+        for p, n, nm in labels: badge(img, VP, p, n, "white", pop=(t * 3), name=nm)
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
 CROWD_RING = [(-4, -1), (4, -1), (-4, 1.8), (4, 1.8), (-6, -4), (6, -4), (-2.2, -3.5), (2.2, -3.5)]
@@ -153,8 +175,9 @@ def lucas_crowd(t, bx, labels, cheer=True, phones=()):
         j = abs(math.sin(t * 7 + i)) * 0.4 if cheer else 0
         ph = i in phones
         pose = dict(armL=(0, 160 if cheer else 5), armR=((80, 0) if ph else (0, 150 if cheer else 5)), bob=j)
-        bx += character(pos, yaw, crowd_pal(i + 10), LAUGH if cheer else SHOCK, pose, item="phone" if ph else None)
-        labels.append((head_pos(pos, bob=j), str(5 + (i * 13) % 40)))
+        nm = RING_NAMES[i]
+        bx += character(pos, yaw, npal(nm) if nm else crowd_pal(i + 10), LAUGH if cheer else SHOCK, pose, item="phone" if ph else None)
+        labels.append((head_pos(pos, bob=j), str(5 + (i * 13) % 40), nm))
 
 def sc_lucas(t, D):
     bx = world(); labels = []
@@ -163,8 +186,8 @@ def sc_lucas(t, D):
     k = ease(t / D)
     cam = (lerpv((0, 8, 20), (0, 6.5, 9), k), (0, 5.0, -4), 50)
     def post(img, VP):
-        for p, n in labels: badge(img, VP, p, n, "white", scale=0.8)
-        badge(img, VP, head_pos((0, 0, -4)), "999", "gold", scale=1.5, pop=t * 3)
+        for p, n, nm in labels: badge(img, VP, p, n, "white", scale=0.8, name=nm)
+        badge(img, VP, head_pos((0, 0, -4)), "999", "gold", scale=1.5, pop=t * 3, name="Lucas")
         if t > 0.6: pop_text(img, W/2, 420, "O MAIS POPULAR", t - 0.6, size=86, fill=(255, 215, 60))
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
@@ -181,8 +204,8 @@ def sc_me(t, D):
     eye = (HERO_SPOT[0] + math.sin(a) * r, lerp(6, 6.2, k), HERO_SPOT[2] + math.cos(a) * r)
     cam = (eye, (HERO_SPOT[0], lerp(3.5, 5.6, k), HERO_SPOT[2]), 50)
     def post(img, VP):
-        badge(img, VP, head_pos(HERO_SPOT), "1", "gray", scale=1.3, pop=(t - D * 0.4) * 3 if t > D * 0.4 else 1)
-        badge(img, VP, head_pos((0, 0, -4)), "999", "gold", scale=1.0)
+        badge(img, VP, head_pos(HERO_SPOT), "1", "gray", scale=1.3, pop=(t - D * 0.4) * 3 if t > D * 0.4 else 1, name="João")
+        badge(img, VP, head_pos((0, 0, -4)), "999", "gold", scale=1.0, name="Lucas")
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
 THEO_COPY = dict(THEO, shirt=(245, 245, 245), pants=(30, 30, 34), cap=(220, 40, 50), glasses=True, chain=True)
@@ -201,10 +224,10 @@ def sc_copy(t, D):
     else:
         bx += character(pos, 0, pal, NEUTRAL)
     for i, (x0, z, dr, n) in enumerate(WALKERS[:4]):
-        p2 = (x0 + dr * t * 3, 0, z - 8); bx += character(p2, D2R(90 * dr), crowd_pal(i), SMILE, walk_pose(t + i))
+        p2 = (x0 + dr * t * 3, 0, z - 8); bx += character(p2, D2R(90 * dr), npal(WALK_NAMES[i]), SMILE, walk_pose(t + i))
     cam = ((2, 5.5, 13), (pos[0] * 0.6, 4, 2), 48)
     def post(img, VP):
-        badge(img, VP, head_pos(pos), "1", "gray", scale=1.2, shake=6 if sw else 0, t=t)
+        badge(img, VP, head_pos(pos), "1", "gray", scale=1.2, shake=6 if sw else 0, t=t, name="João")
         fl = max(0, 1 - abs(t - D * 0.28) / 0.15)
         if fl > 0:
             ov = Image.new("RGB", img.size, (255, 255, 255)); img.paste(Image.blend(img, ov, fl * 0.85))
@@ -227,11 +250,11 @@ def sc_money(t, D):
         m = T(*p) @ Ry(tt * 8) @ T(0, 0, 0)
         bx.append(box(m @ sp_rx(tt * 6), (0.7, 0.7, 0.14), (255, 205, 60), EMISSIVE))
     for i, (x0, z, dr, n) in enumerate(WALKERS):
-        p2 = (x0 + dr * t * 3, 0, z - 3); bx += character(p2, D2R(90 * dr), crowd_pal(i), NEUTRAL, walk_pose(t + i))
+        p2 = (x0 + dr * t * 3, 0, z - 3); bx += character(p2, D2R(90 * dr), npal(WALK_NAMES[i]), NEUTRAL, walk_pose(t + i))
     k = ease(t / D)
     cam = (lerpv((-6, 6, 13), (4, 6.5, 12), k), (0, 4.5, 2), 50)
     def post(img, VP):
-        badge(img, VP, head_pos(pos), "1", "gray", scale=1.2)
+        badge(img, VP, head_pos(pos), "1", "gray", scale=1.2, name="João")
         if t > D * 0.65: pop_text(img, W/2, 460, "NADA MUDOU", t - D * 0.65, size=96, fill=(255, 90, 90))
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
@@ -249,15 +272,15 @@ def sc_bia(t, D):
     bx += character(hero, D2R(10), THEO, NEUTRAL, walk_pose(t) if t < 1.5 else None)
     for i in range(3):
         p2 = (-6 + i * 3, 0, -6); yaw = D2R(180)
-        bx += character(p2, yaw, crowd_pal(i + 20), LAUGH, dict(armL=(0, 30), armR=(60, 10)))
+        bx += character(p2, yaw, npal(["Rayane", "Mateus", "Jesus"][i]), LAUGH, dict(armL=(0, 30), armR=(60, 10)))
     k = ease(t / D)
     k = ease(t / (D * 0.65))
     eye = lerpv((6, 7, 18), (-3.5, 5.4, 23.5), k)
     tgt = lerpv((-2, 4, 6), (-5.5, 3.2, 10), k)
     cam = (eye, tgt, 48)
     def post(img, VP):
-        badge(img, VP, head_pos(hero), "1", "gray")
-        badge(img, VP, head_pos(BIA_SEAT, bob=-0.35), "1", "gray", pop=(t - D * 0.45) * 3 if t > D * 0.45 else 1)
+        badge(img, VP, head_pos(hero), "1", "gray", name="João")
+        badge(img, VP, head_pos(BIA_SEAT, bob=-0.35), "1", "gray", pop=(t - D * 0.45) * 3 if t > D * 0.45 else 1, name="Bia")
         if t > D * 0.55: pop_text(img, W/2, 1330, "BIA", t - D * 0.55, size=110, fill=(255, 215, 60))
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
@@ -284,13 +307,13 @@ def sc_fall(t, D):
     for i, (dx, dz) in enumerate([(-4, 3), (2, 4), (5, 1), (-6, 0), (0, 7)]):
         p2 = (-9 + dx * 0.5, 0, -4 + dz * 0.5)
         yaw2 = math.atan2(-15 - p2[0], -6 - p2[2])
-        bx += character(p2, yaw2, crowd_pal(i), SHOCK if t > D * 0.45 else SMILE, dict(armL=(0, 10), armR=(0, 10)))
+        bx += character(p2, yaw2, npal(FALL_NAMES[i]), SHOCK if t > D * 0.45 else SMILE, dict(armL=(0, 10), armR=(0, 10)))
     k = ease(t / D)
     cam = (lerpv((-24, 8, 9), (-23, 6, 8), k), lerpv((-15, 5, -9), (-13.5, 2.2, -1.5), k), 50)
     shake = 0.25 if D * 0.42 + 0.5 < t < D * 0.42 + 0.8 else 0
     cam = ((cam[0][0] + random.uniform(-shake, shake), cam[0][1] + random.uniform(-shake, shake), cam[0][2]), cam[1], cam[2])
     def post(img, VP):
-        badge(img, VP, head_pos(pos, yaw, fall=fall) if fall > -30 else (pos[0], 1.6, pos[2] + 6.2), "999", "gold", scale=0.9)
+        badge(img, VP, head_pos(pos, yaw, fall=fall) if fall > -30 else (pos[0], 1.6, pos[2] + 6.2), "999", "gold", scale=0.9, name="Lucas")
         if t > D * 0.42 + 0.5: pop_text(img, W/2, 470, "!!!", t - D * 0.42 - 0.5, size=150, fill=(255, 80, 80))
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
@@ -315,13 +338,20 @@ def sc_film(t, D):
             pose = walk_pose(t + i)
         else:
             pose = dict(armR=(85, 0), armL=(20, 10), bob=abs(math.sin(t * 9 + i)) * 0.2)
-        bx += character(pos, yaw, crowd_pal(i + 30), LAUGH, pose, item=None if leave > 0 else "phone")
+        bx += character(pos, yaw, npal(FILM_NAMES[i]), LAUGH, pose, item=None if leave > 0 else "phone")
     a = D2R(25) + t * 0.12
     cam = ((-15 + math.sin(a) * 17, 17 - t * 0.2, 0.5 + math.cos(a) * 17), (-15, 1.5, 0.5), 50)
     def post(img, VP):
         v = lucas_count(t, D)
         st = "gold" if v > 600 else ("white" if v > 0 else "red")
-        badge(img, VP, LUCAS_HEAD_LYING, str(v), st, scale=1.4, shake=4 if 0 < v < 999 else 0, t=t)
+        badge(img, VP, LUCAS_HEAD_LYING, str(v), st, scale=1.4, shake=4 if 0 < v < 999 else 0, t=t, name="Lucas")
+        if leave <= 0:
+            for i, (x, z) in enumerate(FILMERS):
+                pr = project(VP, (x, 6.4, z))
+                if pr:
+                    fn_ = font(max(24, min(46, 900 / pr[2]))); dd = ImageDraw.Draw(img)
+                    nm = FILM_NAMES[i].upper(); nw = dd.textlength(nm, font=fn_)
+                    dd.text((pr[0] - nw/2, pr[1]), nm, font=fn_, fill=(255, 255, 255), stroke_width=4, stroke_fill=(15, 15, 20))
         d = ImageDraw.Draw(img)
         if leave <= 0:
             r = random.Random(int(t * 6))
@@ -347,12 +377,12 @@ def sc_help(t, D):
                     dict(armL=(lerp(170, 0, rise), 20), armR=(lerp(170, 70, rise), lerp(20, 0, rise))), fall=lerp(-90, 0, rise))
     for i, (x, z) in enumerate(FILMERS[:3]):
         pos = (x - 8, 0, z - 10)
-        bx += character(pos, D2R(200), crowd_pal(i + 30), NEUTRAL, walk_pose(t + i))
+        bx += character(pos, D2R(200), npal(FILM_NAMES[i]), NEUTRAL, walk_pose(t + i))
     cam = (lerpv((0, 7, 6), (-1, 6, 5), ease(t / D)), (-15, 3.4, 2.6), 50)
     def post(img, VP):
-        badge(img, VP, head_pos(hero), "1", "gray")
+        badge(img, VP, head_pos(hero), "1", "gray", name="João")
         lp = head_pos((-15, 0, lz)) if rise > 0.6 else LUCAS_HEAD_LYING
-        badge(img, VP, lp, "0", "red", scale=1.1)
+        badge(img, VP, lp, "0", "red", scale=1.1, name="Lucas")
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
 def sc_numbers(t, D):
@@ -389,7 +419,7 @@ def sc_reveal(t, D):
     cam = (eye, tgt, lerp(50, 60, k))
     def post(img, VP):
         a = project(VP, head_pos(BIA_SEAT, bob=-0.35)); b = project(VP, head_pos(hero))
-        badge(img, VP, head_pos(luc), "1", "green")
+        badge(img, VP, head_pos(luc), "1", "green", name="Lucas")
         if a and b and t > D * 0.3:
             kk = eout((t - D * 0.3) / 1.2)
             d = ImageDraw.Draw(img)
@@ -399,12 +429,13 @@ def sc_reveal(t, D):
                 def P(u): return (lerp(a[0], b[0], u), lerp(a[1], b[1], u) - math.sin(u * math.pi) * 180)
                 d.line([P(u0), P(u1)], fill=(255, 120, 160), width=10)
             if kk >= 1: sp.glow(img, b[0], b[1], 160, (255, 140, 180), 0.8)
-        badge(img, VP, head_pos(hero), "2", "green", scale=1.1)
-        badge(img, VP, head_pos(BIA_SEAT, bob=-0.35), "1", "gray", scale=1.1)
+        badge(img, VP, head_pos(hero), "2", "green", scale=1.1, name="João")
+        badge(img, VP, head_pos(BIA_SEAT, bob=-0.35), "1", "gray", scale=1.1, name="Bia")
         if t > D * 0.55: pop_text(img, W/2, 470, "ERA ELA.", t - D * 0.55, size=110, fill=(255, 150, 190))
     return dict(boxes=bx, cam=cam, light=LIGHT_DAY, post=post)
 
 TRIO = [(-6.2, BIA, "2"), (-4.0, THEO, "2"), (-1.8, LUCAS, "2")]
+TRIO_NAMES = ["Bia", "João", "Lucas"]
 
 def trio_boxes(t, bx, wave=False):
     for i, (x, pal, n) in enumerate(TRIO):
@@ -419,7 +450,7 @@ def sc_sunset(t, D):
     k = ease(t / D)
     cam = (lerpv((-4, 5.0, 24), (-8, 8, 33), k), (-4, 3.6, 10), 50)
     def post(img, VP):
-        for x, pal, n in TRIO: badge(img, VP, head_pos((x, 0, 10), bob=-0.35), n, "green", scale=0.95)
+        for (x, pal, n), nm in zip(TRIO, TRIO_NAMES): badge(img, VP, head_pos((x, 0, 10), bob=-0.35), n, "green", scale=0.95, name=nm)
     return dict(boxes=bx, cam=cam, light=LIGHT_SUNSET, post=post)
 
 LESSON = ["Não importa quantas", "pessoas te seguem.", "Importa quantas ficam", "quando você cai.", "Seja o 1 de alguém."]
@@ -455,7 +486,7 @@ def sc_cta(t, D):
         bx += character((x * 1.5 + 2, 0, 14), 0, pal, HAPPY, dict(armR=(0, 150 + math.sin(t * 9 + i) * 25)))
     cam = ((-4, 5.6, 31), (-4, 4.0, 14), 50)
     def post(img, VP):
-        for x, pal, n in TRIO: badge(img, VP, head_pos((x * 1.5 + 2, 0, 14)), n, "green")
+        for (x, pal, n), nm in zip(TRIO, TRIO_NAMES): badge(img, VP, head_pos((x * 1.5 + 2, 0, 14)), n, "green", name=nm)
         if t > 0.4:
             pop_text(img, W/2, 470, "MARCA O SEU 1", t - 0.4, size=110, fill=(255, 215, 60))
             d = ImageDraw.Draw(img)
@@ -470,6 +501,22 @@ SCENE_FUN = {f.__name__[3:]: f for f in [sc_hook, sc_lucas, sc_me, sc_copy, sc_m
 # ----------------------------------------------------------------------------
 # NARRAÇÃO / LINHA DO TEMPO
 # ----------------------------------------------------------------------------
+class PiperVoice:
+    """Voz neural Piper pt-BR (faber), usando o pacote piper-tts."""
+    def __init__(self, voice_dir):
+        import glob, tempfile
+        self.model = glob.glob(os.path.join(voice_dir, "*.onnx"))[0]
+        self.tmp = tempfile.mkdtemp()
+    def create(self, text, voice=None, speed=1.0, lang=None):
+        out = os.path.join(self.tmp, "o.wav")
+        subprocess.run([sys.executable, "-m", "piper", "-m", self.model, "-f", out, "--length-scale", str(1 / speed),
+                        "--noise-scale", "0.6", "--noise-w-scale", "0.75", "--sentence-silence", "0.22"],
+                       input=text.encode(), check=True, stderr=subprocess.DEVNULL)
+        import wave
+        with wave.open(out) as w:
+            sr = w.getframerate(); a = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
+        return a, sr
+
 def tts(kok, text, voice, speed):
     s, sr = kok.create(text, voice=voice, speed=speed, lang="pt-br")
     s = np.asarray(s, np.float32)
@@ -560,10 +607,10 @@ def sfx_tick(vol=0.12, m=96):
     return sp.pluck(m, 0.08, vol, 40)
 
 def make_laugh(kok, cache):
-    cp = os.path.join(cache, "laugh.npy")
+    cp = os.path.join(cache, "laugh_piper.npy")
     if os.path.exists(cp): return np.load(cp)
-    base = tts(kok, "Ha ha ha ha ha!", "pm_alex", 1.1)
-    base2 = tts(kok, "Rá rá rá rá!", "pf_dora", 1.1)
+    base = tts(kok, "Rá rá rá rá rá!", None, 1.1)
+    base2 = sp.pitch(tts(kok, "Ha ha ha ha!", None, 1.2), 1.35)
     o = np.zeros(int(max(len(base), len(base2)) * 1.6) + SR, np.float32)
     for src, rate, off, v in [(base, 1.0, 0.0, 0.45), (base2, 1.0, 0.2, 0.4), (base, 1.25, 0.45, 0.3), (base2, 0.88, 0.7, 0.3)]:
         s = sp.pitch(src, rate) * v; i = int(off * SR); o[i:i + len(s)] += s[:len(o) - i]
@@ -571,16 +618,15 @@ def make_laugh(kok, cache):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", required=True); ap.add_argument("--voices", required=True)
-    ap.add_argument("--voice", default="pm_alex"); ap.add_argument("--speed", type=float, default=1.0)
+    ap.add_argument("--voice-dir", required=True, help="pasta da voz Piper (ex.: vits-piper-pt_BR-faber-medium)")
+    ap.add_argument("--speed", type=float, default=1.05)
     ap.add_argument("--out", default="out"); ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--preview", type=float, nargs="*")
     a = ap.parse_args()
-    from kokoro_onnx import Kokoro
     os.makedirs(a.out, exist_ok=True); tmp = os.path.join(a.out, "_tmp"); os.makedirs(tmp, exist_ok=True)
     print("» narração...")
-    kok = Kokoro(a.model, a.voices)
-    tl, total = build(kok, a.voice, a.speed, tmp)
+    kok = PiperVoice(a.voice_dir)
+    tl, total = build(kok, os.path.basename(a.voice_dir.rstrip("/")), a.speed, tmp)
     print(f"  duração: {total:.1f}s")
     for s in tl: print(f"  {s['start']:6.1f} {s['dur']:5.1f}  {s['id']}")
     if a.preview is not None:

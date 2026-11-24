@@ -1,56 +1,56 @@
 1
-00:00:00,150 --> 00:00:06,863
+00:00:00,150 --> 00:00:06,164
 Nesse mundo, todo mundo tem um número em cima da cabeça. Ele mostra quantas pessoas gostam de você de verdade.
 
 2
-00:00:07,370 --> 00:00:12,023
+00:00:06,697 --> 00:00:11,354
 O Lucas, o garoto mais popular da escola, tinha 999.
 
 3
-00:00:12,549 --> 00:00:14,242
-E eu? Eu tinha... 1.
+00:00:11,775 --> 00:00:13,824
+E eu, o João? Eu tinha... 1.
 
 4
-00:00:15,693 --> 00:00:20,429
+00:00:15,328 --> 00:00:20,241
 Eu queria ser igual a ele. Copiei as roupas, o jeito de andar, até as piadas.
 
 5
-00:00:20,765 --> 00:00:26,118
+00:00:20,672 --> 00:00:25,349
 Gastei todo o meu dinheiro com coisas caras, só pra impressionar. Mas o número não mudava.
 
 6
-00:00:26,599 --> 00:00:31,202
+00:00:25,861 --> 00:00:30,001
 E tinha uma pessoa que eu nem notava: a Bia, que passava o intervalo sozinha.
 
 7
-00:00:31,808 --> 00:00:35,540
+00:00:30,582 --> 00:00:33,962
 Um dia, o Lucas tropeçou na escada, na frente de todo mundo.
 
 8
-00:00:36,206 --> 00:00:41,003
-E ninguém ajudou. Todo mundo filmou. Todo mundo riu. E o número dele começou a cair.
+00:00:34,513 --> 00:00:41,846
+E ninguém ajudou. A Isabella, o Mateus, a Rayane... todo mundo filmou. Todo mundo riu. E o número dele começou a cair.
 
 9
-00:00:41,892 --> 00:00:45,827
+00:00:42,671 --> 00:00:46,812
 Eu fui o único que parei. Estendi a mão, e ajudei ele a levantar.
 
 10
-00:00:47,039 --> 00:00:53,586
+00:00:48,026 --> 00:00:54,271
 Naquele momento, o meu número subiu pra 2. E o dele, pela primeira vez, mostrava um número de verdade: 1.
 
 11
-00:00:54,168 --> 00:00:59,742
+00:00:54,917 --> 00:01:00,886
 Foi aí que eu entendi quem era o meu primeiro 1. A Bia. Ela sempre esteve lá. Eu é que nunca olhei.
 
 12
-00:01:00,379 --> 00:01:06,397
-Hoje, nós três passamos o intervalo juntos. Meu número é pequeno. Mas cada pessoa nele é de verdade.
+00:01:01,470 --> 00:01:08,513
+Hoje, eu, a Bia e o Lucas passamos o intervalo juntos. Meu número é pequeno. Mas cada pessoa nele é de verdade.
 
 13
-00:01:07,039 --> 00:01:12,675
+00:01:09,139 --> 00:01:14,733
 Não importa quantas pessoas te seguem. Importa quantas ficam quando você cai. Seja o 1 de alguém.
 
 14
-00:01:14,271 --> 00:01:16,571
+00:01:16,344 --> 00:01:18,684
 Marca aqui aquele amigo que é o seu 1.
 
